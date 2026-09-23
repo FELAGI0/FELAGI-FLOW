@@ -1,0 +1,69 @@
+x-backend-env: &backend-env
+  DATABASE_URL: ${DATABASE_URL:?set in .env}
+  FERNET_KEY: ${FERNET_KEY:-}
+  LLM_MODELS: ${LLM_MODELS:-[]}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+x-backend: &backend
+  image: felagi-flow-backend:0.1.0
+  build: ./backend
+  environment: *backend-env
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  api:
+    <<: *backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  worker:
+    <<: *backend
+    # заглушка завершается сразу — держим контейнер живым до настоящего воркера (этап 3–4)
+    command: ["sh", "-c", "python -m app.worker && sleep infinity"]
+
+  scheduler:
+    <<: *backend
+    command: ["sh", "-c", "python -m app.scheduler && sleep infinity"]
+
+  caddy:
+    build: ./frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy_data:/data
+      - ./caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
