@@ -28,6 +28,7 @@ dev = [
     "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
     "httpx==0.28.1",
+    "aiosqlite==0.22.1",
 ]
 
 [build-system]
@@ -40,9 +41,15 @@ packages = ["app"]
 [tool.ruff]
 target-version = "py313"
 line-length = 100
+# миграции генерирует alembic — линтить их вручную каждый раз смысла нет,
+# mypy их всё равно проверяет
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+# RUF001/002/003 ругаются на кириллические «а/е/о/с/В» в строках, докстрингах и
+# комментариях — для русскоязычного кода это сплошной шум
+ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.mypy]
 python_version = "3.13"
@@ -53,3 +60,4 @@ plugins = ["pydantic.mypy"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+markers = ["postgres: требует реальный Postgres (RESTRICT/FK специфично для диалекта)"]

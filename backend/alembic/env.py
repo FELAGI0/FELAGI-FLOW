@@ -6,13 +6,13 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
 from app.shared.config import settings
+from app.shared.models import Base
 
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Подключить Base из app/shared/models на этапе 2, когда появятся модели.
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

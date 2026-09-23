@@ -10,6 +10,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: felagi
+          POSTGRES_PASSWORD: felagi
+          POSTGRES_DB: felagi_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U felagi -d felagi_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,6 +40,8 @@ jobs:
       - name: Typecheck
         run: mypy .
       - name: Test
+        env:
+          TEST_DATABASE_URL: postgresql+asyncpg://felagi:felagi@localhost:5432/felagi_test
         run: pytest
 
   frontend:
