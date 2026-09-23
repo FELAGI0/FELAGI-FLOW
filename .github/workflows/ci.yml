@@ -46,3 +46,43 @@ jobs:
         run: npx tsc --noEmit
       - name: Test
         run: npx vitest run
+
+  compose-smoke:
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare env
+        run: cp .env.example .env
+
+      - name: Build images
+        run: docker compose build
+
+      - name: Start stack
+        run: docker compose up -d
+
+      # 30 × 2s = 60s; compose сам ждёт healthy api (depends_on),
+      # цикл страхует от медленного старта caddy/postgres
+      - name: Wait for /healthz
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost/healthz; then
+              echo
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::timeout waiting for http://localhost/healthz" >&2
+          exit 1
+
+      - name: Check front page
+        run: curl -fsS http://localhost/ | grep -q "Felagi Flow"
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose logs --no-color --tail=200
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
