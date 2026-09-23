@@ -2,13 +2,13 @@ import os
 from collections.abc import AsyncIterator
 from typing import Any
 
+# jwt_secret_key обязателен и без дефолта — задать до любого импорта app.*
+os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-not-for-production")
+
+import httpx
 import pytest
 from sqlalchemy import event
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.shared.models import Base
 
@@ -47,3 +47,18 @@ async def session() -> AsyncIterator[AsyncSession]:
         yield s
         await s.rollback()
     await engine.dispose()
+
+
+@pytest.fixture
+async def client(session: AsyncSession) -> AsyncIterator[httpx.AsyncClient]:
+    from app.main import app
+    from app.shared.db import get_session
+
+    async def _override() -> AsyncIterator[AsyncSession]:
+        yield session
+
+    app.dependency_overrides[get_session] = _override
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
+        yield c
+    app.dependency_overrides.clear()

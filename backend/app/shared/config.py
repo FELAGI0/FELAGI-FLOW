@@ -12,6 +12,14 @@ class Settings(BaseSettings):
     llm_models: str = "[]"
     log_level: str = "INFO"
 
+    # без дефолта — приложение не стартует, пока секрет не задан
+    jwt_secret_key: str
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 30
+    # secure=True только за TLS; в локальной разработке — False
+    cookie_secure: bool = False
+
     @property
     def llm_models_list(self) -> list[str]:
         models: list[str] = json.loads(self.llm_models)

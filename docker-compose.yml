@@ -1,6 +1,7 @@
 x-backend-env: &backend-env
   DATABASE_URL: ${DATABASE_URL:?set in .env}
   FERNET_KEY: ${FERNET_KEY:-}
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:?set in .env}
   LLM_MODELS: ${LLM_MODELS:-[]}
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
 
