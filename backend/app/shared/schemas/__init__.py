@@ -4,5 +4,18 @@ from app.shared.schemas.auth import (
     RegisterRequest,
     TokenResponse,
 )
+from app.shared.schemas.invitation import (
+    InvitationAcceptResponse,
+    InvitationCreate,
+    InvitationResponse,
+)
 
-__all__ = ["LoginRequest", "MeResponse", "RegisterRequest", "TokenResponse"]
+__all__ = [
+    "InvitationAcceptResponse",
+    "InvitationCreate",
+    "InvitationResponse",
+    "LoginRequest",
+    "MeResponse",
+    "RegisterRequest",
+    "TokenResponse",
+]

@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     # secure=True только за TLS; в локальной разработке — False
     cookie_secure: bool = False
 
+    # база для ссылок-приглашений: {frontend_url}/invite/{token}
+    frontend_url: str = "http://localhost"
+    invitation_expire_days: int = 7
+
     @property
     def llm_models_list(self) -> list[str]:
         models: list[str] = json.loads(self.llm_models)
