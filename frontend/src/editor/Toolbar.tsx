@@ -6,24 +6,32 @@ import { Input } from "@/components/ui/input";
 interface ToolbarProps {
     workflowName: string;
     status: string;
+    lastVersion: number | null;
     isDirty: boolean;
     isSaving: boolean;
-    isPublishing: boolean;
     onRename: (name: string) => void;
     onSave: () => void;
-    onPublish: () => void;
+    onOpenVersions: () => void;
+    onOpenPublish: () => void;
     backTo: string;
 }
+
+const STATUS_CLASSES: Record<string, string> = {
+    draft: "border-slate-300 text-slate-600",
+    active: "border-emerald-300 bg-emerald-50 text-emerald-900",
+    paused: "border-amber-300 bg-amber-50 text-amber-900",
+};
 
 export function Toolbar({
     workflowName,
     status,
+    lastVersion,
     isDirty,
     isSaving,
-    isPublishing,
     onRename,
     onSave,
-    onPublish,
+    onOpenVersions,
+    onOpenPublish,
     backTo,
 }: ToolbarProps) {
     return (
@@ -40,19 +48,33 @@ export function Toolbar({
             />
 
             <span
-                className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
+                className={`rounded-full border px-2 py-0.5 text-xs ${STATUS_CLASSES[status] ?? ""}`}
                 data-testid="workflow-status"
             >
                 {status}
             </span>
+            {lastVersion !== null && (
+                <span className="text-xs text-muted-foreground" data-testid="last-version">
+                    v{lastVersion}
+                </span>
+            )}
             {isDirty && <span className="text-xs text-amber-600">● не сохранено</span>}
 
             <div className="ml-auto flex gap-2">
-                <Button variant="outline" size="sm" onClick={onSave} disabled={isSaving}>
+                <Button variant="outline" size="sm" onClick={onOpenVersions}>
+                    Версии
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onSave}
+                    disabled={isSaving}
+                    data-testid="save-button"
+                >
                     {isSaving ? "Сохранение…" : "Сохранить"}
                 </Button>
-                <Button size="sm" onClick={onPublish} disabled={isPublishing}>
-                    {isPublishing ? "Публикация…" : "Опубликовать"}
+                <Button size="sm" onClick={onOpenPublish} data-testid="publish-button">
+                    Опубликовать
                 </Button>
             </div>
         </header>

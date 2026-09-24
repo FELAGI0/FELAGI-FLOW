@@ -17,6 +17,12 @@ node_modules/
 dist/
 .vite/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # Env
 .env
 .env.*
