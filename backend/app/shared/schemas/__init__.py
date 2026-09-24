@@ -9,6 +9,12 @@ from app.shared.schemas.invitation import (
     InvitationCreate,
     InvitationResponse,
 )
+from app.shared.schemas.workspace import (
+    MemberResponse,
+    MemberRoleUpdate,
+    WorkspaceResponse,
+    WorkspaceUpdate,
+)
 
 __all__ = [
     "InvitationAcceptResponse",
@@ -16,6 +22,10 @@ __all__ = [
     "InvitationResponse",
     "LoginRequest",
     "MeResponse",
+    "MemberResponse",
+    "MemberRoleUpdate",
     "RegisterRequest",
     "TokenResponse",
+    "WorkspaceResponse",
+    "WorkspaceUpdate",
 ]
