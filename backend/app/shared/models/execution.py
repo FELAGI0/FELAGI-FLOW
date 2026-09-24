@@ -1,7 +1,9 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Uuid, func, text
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Uuid, func, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.shared.models.base import Base
@@ -19,6 +21,17 @@ class Execution(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     workflow_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False
+    )
+    # запуск пинит версию графа: изменения черновика не влияют на идущий запуск.
+    # RESTRICT — версия, на которой стоит запуск, не удаляется (история запусков
+    # остаётся воспроизводимой)
+    workflow_version_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("workflow_versions.id", ondelete="RESTRICT"), nullable=False
+    )
+    # полезная нагрузка триггера: то, что пришло от вебхука/расписания/ручного
+    # запуска и доступно узлам как {{ trigger.payload.* }}
+    trigger_payload: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON().with_variant(JSONB(), "postgresql"), nullable=True
     )
     # 'queued'|'running'|'succeeded'|'failed'|'dead'
     status: Mapped[str] = mapped_column(String, nullable=False, default="queued")

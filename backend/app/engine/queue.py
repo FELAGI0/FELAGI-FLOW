@@ -8,6 +8,7 @@
 
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,14 +25,24 @@ def backoff(attempts: int) -> int:
 async def enqueue(
     session: AsyncSession,
     workflow_id: uuid.UUID,
+    workflow_version_id: uuid.UUID,
     max_attempts: int = 3,
+    trigger_payload: dict[str, Any] | None = None,
 ) -> Execution:
+    """Ставит запуск в очередь, пиня версию графа.
+
+    workflow_version_id обязателен: запуск должен выполняться ровно против той
+    версии, что была актуальна в момент постановки, иначе правки черновика
+    поменяют поведение уже идущего запуска.
+    """
     execution = Execution(
         workflow_id=workflow_id,
+        workflow_version_id=workflow_version_id,
         status="queued",
         attempts=0,
         max_attempts=max_attempts,
         available_at=datetime.now(UTC),
+        trigger_payload=trigger_payload or {},
     )
     session.add(execution)
     await session.flush()

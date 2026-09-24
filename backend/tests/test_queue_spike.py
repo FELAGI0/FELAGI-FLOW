@@ -22,12 +22,14 @@ from app.engine.queue import (
     queue_depth,
     reclaim_stale,
 )
-from app.shared.models import Execution, User, Workflow, Workspace
+from app.shared.models import Execution, User, Workflow, WorkflowVersion, Workspace
 
 pytestmark = pytest.mark.postgres
 
 
-async def _make_workflow(session: AsyncSession) -> uuid.UUID:
+async def _make_workflow(session: AsyncSession) -> tuple[uuid.UUID, uuid.UUID]:
+    """Создаёт workflow с одной версией. Возвращает (workflow_id, version_id):
+    enqueue требует пин версии, т.к. запуск выполняется против конкретной версии."""
     user = User(email=f"{uuid.uuid4().hex[:8]}@example.com", password_hash="h")
     session.add(user)
     await session.flush()
@@ -37,7 +39,12 @@ async def _make_workflow(session: AsyncSession) -> uuid.UUID:
     workflow = Workflow(workspace_id=workspace.id, name="WF", created_by=user.id)
     session.add(workflow)
     await session.flush()
-    return workflow.id
+    version = WorkflowVersion(
+        workflow_id=workflow.id, version=1, graph={"nodes": [], "edges": []}, created_by=user.id
+    )
+    session.add(version)
+    await session.flush()
+    return workflow.id, version.id
 
 
 @pytest.fixture
@@ -57,8 +64,8 @@ async def session_factory(session: AsyncSession) -> AsyncIterator[async_sessionm
 
 
 async def test_enqueue_creates_queued_execution(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    execution = await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    execution = await enqueue(session, wf_id, ver_id)
 
     assert execution.status == "queued"
     assert execution.attempts == 0
@@ -68,8 +75,8 @@ async def test_enqueue_creates_queued_execution(session: AsyncSession) -> None:
 
 
 async def test_claim_next_marks_running_and_increments_attempts(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
     await session.commit()
 
     claimed = await claim_next(session, "worker-a")
@@ -87,8 +94,8 @@ async def test_claim_next_empty_queue_returns_none(session: AsyncSession) -> Non
 
 
 async def test_claim_next_skips_future_available_at(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
     await session.execute(
         update(Execution).values(available_at=datetime.now(UTC) + timedelta(hours=1))
     )
@@ -98,9 +105,9 @@ async def test_claim_next_skips_future_available_at(session: AsyncSession) -> No
 
 
 async def test_claim_next_respects_order(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    first = await enqueue(session, wf_id)
-    second = await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    first = await enqueue(session, wf_id, ver_id)
+    second = await enqueue(session, wf_id, ver_id)
     now = datetime.now(UTC)
     await session.execute(
         update(Execution).where(Execution.id == first.id).values(
@@ -126,9 +133,9 @@ async def test_two_parallel_claims_do_not_take_same_execution(
     session: AsyncSession, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:
     """SKIP LOCKED: два воркера одновременно берут РАЗНЫЕ задачи."""
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
+    await enqueue(session, wf_id, ver_id)
     await session.commit()
 
     session_a: AsyncSession = session_factory()
@@ -161,8 +168,8 @@ async def test_parallel_claim_single_row_second_gets_none(
     session: AsyncSession, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:
     """Одна задача: второй воркер не ждёт и не берёт её — получает None."""
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
     await session.commit()
 
     session_a: AsyncSession = session_factory()
@@ -183,8 +190,8 @@ async def test_parallel_claim_single_row_second_gets_none(
 
 
 async def test_heartbeat_updates_locked_at(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
     await session.commit()
     claimed = await claim_next(session, "worker-a")
     assert claimed is not None
@@ -204,8 +211,8 @@ async def test_heartbeat_updates_locked_at(session: AsyncSession) -> None:
 
 
 async def test_heartbeat_from_other_worker_is_ignored(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
     await session.commit()
     claimed = await claim_next(session, "worker-a")
     assert claimed is not None
@@ -226,8 +233,8 @@ async def test_heartbeat_from_other_worker_is_ignored(session: AsyncSession) -> 
 async def test_reclaim_returns_stale_to_queue_without_changing_attempts(
     session: AsyncSession,
 ) -> None:
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
     await session.commit()
     claimed = await claim_next(session, "worker-a")
     assert claimed is not None
@@ -254,8 +261,8 @@ async def test_reclaim_returns_stale_to_queue_without_changing_attempts(
 
 
 async def test_reclaim_leaves_fresh_locks_alone(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
     await session.commit()
     claimed = await claim_next(session, "worker-a")
     assert claimed is not None
@@ -274,8 +281,8 @@ async def test_reclaim_leaves_fresh_locks_alone(session: AsyncSession) -> None:
 
 
 async def test_complete_success(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
     await session.commit()
     claimed = await claim_next(session, "worker-a")
     assert claimed is not None
@@ -289,8 +296,8 @@ async def test_complete_success(session: AsyncSession) -> None:
 
 
 async def test_complete_failure_reschedules_with_backoff(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id, max_attempts=3)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id, max_attempts=3)
     await session.commit()
     claimed = await claim_next(session, "worker-a")
     assert claimed is not None
@@ -309,8 +316,8 @@ async def test_complete_failure_reschedules_with_backoff(session: AsyncSession) 
 
 
 async def test_complete_failure_exhausted_retries_goes_dead(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    execution = await enqueue(session, wf_id, max_attempts=3)
+    wf_id, ver_id = await _make_workflow(session)
+    execution = await enqueue(session, wf_id, ver_id, max_attempts=3)
     # имитируем третью попытку
     await session.execute(
         update(Execution)
@@ -340,8 +347,8 @@ def test_backoff_exponential(attempts: int, expected: int) -> None:
 
 async def test_worker_killed_during_execution(session: AsyncSession) -> None:
     """Воркер падает посреди работы: задача подхватывается, но не выполняется дважды."""
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
     await session.commit()
 
     # 1-2. воркер A берёт задачу и «умирает»: ни complete, ни heartbeat
@@ -377,9 +384,9 @@ async def test_worker_killed_during_execution(session: AsyncSession) -> None:
 
 
 async def test_queue_depth_counts_only_ready(session: AsyncSession) -> None:
-    wf_id = await _make_workflow(session)
-    await enqueue(session, wf_id)
-    delayed = await enqueue(session, wf_id)
+    wf_id, ver_id = await _make_workflow(session)
+    await enqueue(session, wf_id, ver_id)
+    delayed = await enqueue(session, wf_id, ver_id)
     await session.execute(
         update(Execution)
         .where(Execution.id == delayed.id)
