@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost"
     invitation_expire_days: int = 7
 
+    # ключ Anthropic для LLM-узла (этап 6 заменит его на credentials воркспейса)
+    anthropic_api_key: str = ""
+
     @property
     def llm_models_list(self) -> list[str]:
         models: list[str] = json.loads(self.llm_models)

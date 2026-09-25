@@ -6,7 +6,7 @@
 from typing import Any
 
 
-def handle_debug(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+async def handle_debug(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     message = params.get("message")
     if message is None:
         return {"error": "debug node requires 'message'"}

@@ -10,6 +10,7 @@ import uuid
 from collections import defaultdict, deque
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engine import expressions
@@ -24,6 +25,10 @@ IF_NODE_TYPE = "logic_if"
 
 class NodeExecutionError(Exception):
     """Узел вернул ошибку или упал — запуск останавливается."""
+
+
+class ExecutionCancelled(Exception):
+    """Пользователь отменил запуск: прерываемся между узлами, без retry."""
 
 
 def topological_order(graph: Graph) -> list[Node]:
@@ -134,6 +139,15 @@ async def run_execution(
         # heartbeat перед каждым узлом: долгий граф не должен считаться зависшим
         await heartbeat(session, execution.id, worker_id)
 
+        # отмена — best effort: флаг читаем из БД перед каждым узлом. Отдельный
+        # scalar-select (не session.get) идёт в БД и видит чужой commit, минуя
+        # identity map сессии
+        current_status = await session.scalar(
+            select(Execution.status).where(Execution.id == execution.id)
+        )
+        if current_status == "canceled":
+            raise ExecutionCancelled("canceled")
+
         if node.id in skipped:
             await _record_step(session, execution.id, node, "skipped", None, None)
             continue
@@ -164,7 +178,7 @@ async def run_execution(
         resolved = expressions.resolve_params(params, context)
 
         started = time.perf_counter()
-        result = handle(node.type, resolved, context)
+        result = await handle(node.type, resolved, context)
         duration_ms = int((time.perf_counter() - started) * 1000)
 
         if "error" in result:

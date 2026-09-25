@@ -28,12 +28,14 @@ class Execution(Base):
     workflow_version_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("workflow_versions.id", ondelete="RESTRICT"), nullable=False
     )
+    # 'manual'|'cron'|'webhook'|'poll' — откуда пришёл запуск
+    trigger_type: Mapped[str] = mapped_column(String, nullable=False, default="manual")
     # полезная нагрузка триггера: то, что пришло от вебхука/расписания/ручного
     # запуска и доступно узлам как {{ trigger.payload.* }}
     trigger_payload: Mapped[dict[str, Any] | None] = mapped_column(
         JSON().with_variant(JSONB(), "postgresql"), nullable=True
     )
-    # 'queued'|'running'|'succeeded'|'failed'|'dead'
+    # 'queued'|'running'|'succeeded'|'failed'|'dead'|'canceled'
     status: Mapped[str] = mapped_column(String, nullable=False, default="queued")
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=3)

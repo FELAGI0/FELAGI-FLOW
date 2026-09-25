@@ -5,7 +5,7 @@ NODE_SCHEMAS — единственный источник истины для �
 """
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -34,11 +34,23 @@ class LogicIfParams(BaseModel):
     right: str | None = None
 
 
+class KeyValue(BaseModel):
+    name: str
+    value: str
+
+
 class HttpParams(BaseModel):
+    """Параметры HTTP-узла по DESIGN.md §4: headers[]/query[] списками,
+    auth — через credential (этап 6), timeout_s — таймаут запроса."""
+
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = "GET"
     url: str
-    headers: dict[str, str] = Field(default_factory=dict)
-    body: str | None = None
+    headers: list[KeyValue] = Field(default_factory=list)
+    query: list[KeyValue] = Field(default_factory=list)
+    body: dict[str, Any] | None = None
+    auth: Literal["none", "basic", "bearer"] = "none"
+    credential_id: str | None = None
+    timeout_s: float = Field(default=30.0, gt=0)
 
 
 class LlmParams(BaseModel):

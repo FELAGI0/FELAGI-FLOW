@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.api.routes import (
     auth_router,
+    executions_router,
     invitations_router,
     node_types_router,
     workflows_router,
@@ -17,6 +18,7 @@ app.include_router(invitations_router)
 app.include_router(workspaces_router)
 app.include_router(node_types_router)
 app.include_router(workflows_router)
+app.include_router(executions_router)
 
 
 @app.get("/healthz")

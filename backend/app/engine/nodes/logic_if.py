@@ -60,7 +60,7 @@ def _as_number(value: Any) -> float | None:
     return None
 
 
-def handle_logic_if(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+async def handle_logic_if(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     left = params.get("left")
     op = str(params.get("op", "="))
     right = params.get("right")

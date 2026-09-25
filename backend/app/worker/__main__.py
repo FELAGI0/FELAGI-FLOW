@@ -13,7 +13,7 @@ import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engine.queue import claim_next, complete
-from app.engine.runner import NodeExecutionError, run_execution
+from app.engine.runner import ExecutionCancelled, NodeExecutionError, run_execution
 from app.shared.db import session_factory
 from app.shared.logging import setup_logging
 from app.shared.models import Execution, WorkflowVersion
@@ -43,6 +43,9 @@ async def process_one(session: AsyncSession, execution: Execution, worker_id: st
 
     try:
         await run_execution(session, execution, version, worker_id)
+    except ExecutionCancelled:
+        # отмена — терминальный статус, retry не нужен: оставляем 'canceled'
+        execution.status = "canceled"
     except NodeExecutionError as exc:
         # падение узла — прикладная ошибка запуска
         await complete(session, execution.id, success=False, error=str(exc))

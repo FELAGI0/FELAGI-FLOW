@@ -7,7 +7,7 @@
 from typing import Any
 
 
-def handle_trigger_manual(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+async def handle_trigger_manual(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     trigger = context.get("trigger", {})
     payload = trigger.get("payload", {}) if isinstance(trigger, dict) else {}
     return {"payload": payload}

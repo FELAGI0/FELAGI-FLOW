@@ -8,7 +8,7 @@ work уже с готовыми значениями.
 from typing import Any
 
 
-def handle_transform_set(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
+async def handle_transform_set(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     fields = params.get("fields", [])
     if not isinstance(fields, list):
         return {"error": "fields must be a list"}

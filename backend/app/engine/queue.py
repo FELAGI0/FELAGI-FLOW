@@ -28,6 +28,7 @@ async def enqueue(
     workflow_version_id: uuid.UUID,
     max_attempts: int = 3,
     trigger_payload: dict[str, Any] | None = None,
+    trigger_type: str = "manual",
 ) -> Execution:
     """Ставит запуск в очередь, пиня версию графа.
 
@@ -43,6 +44,7 @@ async def enqueue(
         max_attempts=max_attempts,
         available_at=datetime.now(UTC),
         trigger_payload=trigger_payload or {},
+        trigger_type=trigger_type,
     )
     session.add(execution)
     await session.flush()
