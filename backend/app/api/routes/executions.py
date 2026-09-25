@@ -49,6 +49,7 @@ def _step_response(step: ExecutionStep) -> ExecutionStepResponse:
         id=step.id,
         node_id=step.node_id,
         node_type=step.node_type,
+        attempt=step.attempt,
         status=step.status,
         input=step.input,
         output=step.output,

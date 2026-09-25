@@ -25,6 +25,8 @@ class ExecutionStep(Base):
     )
     node_id: Mapped[str] = mapped_column(String, nullable=False)
     node_type: Mapped[str] = mapped_column(String, nullable=False)
+    # номер попытки узла (per-node retry, 4.C): 1, 2, 3... для одного node_id
+    attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     # 'running'|'succeeded'|'failed'|'skipped'
     status: Mapped[str] = mapped_column(String, nullable=False)
     input: Mapped[dict[str, Any] | None] = mapped_column(

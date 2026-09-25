@@ -5,6 +5,7 @@
 вместе со всеми потомками — merge в MVP отсутствует (DESIGN.md §4).
 """
 
+import asyncio
 import time
 import uuid
 from collections import defaultdict, deque
@@ -14,13 +15,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engine import expressions
-from app.engine.node_schemas import NODE_SCHEMAS
+from app.engine.node_schemas import NODE_SCHEMAS, RetryConfig
 from app.engine.nodes import handle
 from app.engine.queue import heartbeat
 from app.shared.models import Execution, ExecutionStep, WorkflowVersion
 from app.shared.schemas.workflow import Graph, Node
 
 IF_NODE_TYPE = "logic_if"
+
+# точка подмены для тестов: patching asyncio.sleep задел бы весь процесс,
+# включая пул соединений SQLAlchemy
+_sleep = asyncio.sleep
 
 
 class NodeExecutionError(Exception):
@@ -29,6 +34,18 @@ class NodeExecutionError(Exception):
 
 class ExecutionCancelled(Exception):
     """Пользователь отменил запуск: прерываемся между узлами, без retry."""
+
+
+def _backoff_delay(config: RetryConfig, attempt: int) -> float:
+    """Задержка перед повтором после попытки номер `attempt` (1-based), в секундах.
+
+    fixed: всегда base_s. exponential: base_s * 2**(attempt-1), то есть
+    attempt=1 → base_s, attempt=2 → 2*base_s, attempt=3 → 4*base_s.
+    """
+    if config.backoff == "fixed":
+        return config.base_s
+    multiplier: float = float(2 ** (attempt - 1))
+    return config.base_s * multiplier
 
 
 def topological_order(graph: Graph) -> list[Node]:
@@ -92,12 +109,14 @@ async def _record_step(
     error: str | None = None,
     warnings: list[str] | None = None,
     duration_ms: int | None = None,
+    attempt: int = 1,
 ) -> None:
     session.add(
         ExecutionStep(
             execution_id=execution_id,
             node_id=node.id,
             node_type=node.type,
+            attempt=attempt,
             status=status,
             input=input_params,
             output=output,
@@ -111,6 +130,73 @@ async def _record_step(
 
 def load_graph(version: WorkflowVersion) -> Graph:
     return Graph.model_validate(version.graph)
+
+
+async def _run_node_with_retry(
+    session: AsyncSession,
+    execution: Execution,
+    node: Node,
+    worker_id: str,
+    resolved: dict[str, Any],
+    context: dict[str, Any],
+    retry: RetryConfig,
+) -> dict[str, Any]:
+    """Выполняет узел, повторяя при ошибке до retry.max_retries раз.
+
+    Каждая попытка пишется в execution_steps со своим номером (attempt=1,2,3...);
+    между попытками — пауза backoff и heartbeat, иначе reclaim сочёл бы живого
+    воркера зависшим и запустил бы узел параллельно.
+    duration_ms последней записи покрывает ВСЕ попытки: это время, которое узел
+    в сумме занимал в запуске.
+    """
+    started = time.perf_counter()
+    attempt = 0
+    while True:
+        attempt += 1
+        error: str | None = None
+        result: dict[str, Any] = {}
+        try:
+            result = await handle(node.type, resolved, context)
+        except Exception as exc:  # любая ошибка узла = ошибка попытки
+            error = str(exc)
+        else:
+            if "error" in result:
+                error = str(result["error"])
+
+        if error is None:
+            warnings = [result["warning"]] if "warning" in result else []
+            await _record_step(
+                session,
+                execution.id,
+                node,
+                "succeeded",
+                resolved,
+                result,
+                warnings=warnings,
+                duration_ms=int((time.perf_counter() - started) * 1000),
+                attempt=attempt,
+            )
+            return result
+
+        # попытка провалилась: пишем failed и решаем, повторять ли
+        error_payload = result if result else {"error": error}
+        await _record_step(
+            session,
+            execution.id,
+            node,
+            "failed",
+            resolved,
+            error_payload,
+            error,
+            duration_ms=int((time.perf_counter() - started) * 1000),
+            attempt=attempt,
+        )
+
+        if attempt > retry.max_retries:
+            raise NodeExecutionError(f"node '{node.id}': {error}")
+
+        await _sleep(_backoff_delay(retry, attempt))
+        await heartbeat(session, execution.id, worker_id)
 
 
 async def run_execution(
@@ -177,34 +263,12 @@ async def run_execution(
 
         resolved = expressions.resolve_params(params, context)
 
-        started = time.perf_counter()
-        result = await handle(node.type, resolved, context)
-        duration_ms = int((time.perf_counter() - started) * 1000)
-
-        if "error" in result:
-            await _record_step(
-                session,
-                execution.id,
-                node,
-                "failed",
-                resolved,
-                result,
-                str(result["error"]),
-                duration_ms=duration_ms,
-            )
-            raise NodeExecutionError(f"node '{node.id}': {result['error']}")
-
-        warnings = [result["warning"]] if "warning" in result else []
-        await _record_step(
-            session,
-            execution.id,
-            node,
-            "succeeded",
-            resolved,
-            result,
-            warnings=warnings,
-            duration_ms=duration_ms,
+        # retry валидирован схемой узла; отсутствие retry → без повторов
+        retry = RetryConfig.model_validate(params.get("retry") or {})
+        result = await _run_node_with_retry(
+            session, execution, node, worker_id, resolved, context, retry
         )
+
         context["nodes"][node.id] = {"output": result}
 
         if node.type == IF_NODE_TYPE:

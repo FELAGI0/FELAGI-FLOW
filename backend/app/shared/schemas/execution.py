@@ -24,6 +24,8 @@ class ExecutionStepResponse(BaseModel):
     id: uuid.UUID
     node_id: str
     node_type: str
+    # номер попытки узла: 1, 2, 3... при per-node retry (4.C)
+    attempt: int
     status: str
     input: dict[str, Any] | None
     output: dict[str, Any] | None

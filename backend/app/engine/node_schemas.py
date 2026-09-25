@@ -10,8 +10,32 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
-class TriggerManualParams(BaseModel):
-    """Ручной запуск — параметров нет."""
+class RetryConfig(BaseModel):
+    """Политика повторов узла (DESIGN.md §4): общая для всех типов узлов.
+
+    max_retries — сколько ПОВТОРОВ после первой попытки (0 = без повторов,
+    всего попыток max_retries + 1).
+    """
+
+    max_retries: int = Field(default=0, ge=0, le=5)
+    backoff: Literal["fixed", "exponential"] = "exponential"
+    base_s: float = Field(default=1.0, gt=0, le=60)
+
+
+class BaseNodeParams(BaseModel):
+    """Общие параметры всех узлов: retry-политика и подпись на канвасе.
+
+    Наследуется конкретными params-моделями, поэтому JSON-Schema каждого узла
+    (GET /api/node-types) содержит retry/label наравне с его полями — на этом
+    строится и валидация графа, и секция Retry в панели параметров.
+    """
+
+    retry: RetryConfig | None = None
+    label: str | None = None
+
+
+class TriggerManualParams(BaseNodeParams):
+    """Ручной запуск — своих параметров нет."""
 
 
 class SetField(BaseModel):
@@ -19,16 +43,16 @@ class SetField(BaseModel):
     value: str
 
 
-class TransformSetParams(BaseModel):
+class TransformSetParams(BaseNodeParams):
     fields: list[SetField] = Field(default_factory=list)
 
 
-class DebugParams(BaseModel):
+class DebugParams(BaseNodeParams):
     level: Literal["info", "warn", "error"] = "info"
     message: str
 
 
-class LogicIfParams(BaseModel):
+class LogicIfParams(BaseNodeParams):
     left: str
     op: Literal["=", "!=", "contains", ">", "<", "empty", "not_empty"]
     right: str | None = None
@@ -39,7 +63,7 @@ class KeyValue(BaseModel):
     value: str
 
 
-class HttpParams(BaseModel):
+class HttpParams(BaseNodeParams):
     """Параметры HTTP-узла по DESIGN.md §4: headers[]/query[] списками,
     auth — через credential (этап 6), timeout_s — таймаут запроса."""
 
@@ -53,7 +77,7 @@ class HttpParams(BaseModel):
     timeout_s: float = Field(default=30.0, gt=0)
 
 
-class LlmParams(BaseModel):
+class LlmParams(BaseNodeParams):
     model: str
     system_prompt: str | None = None
     prompt: str
