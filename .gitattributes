@@ -1,0 +1,23 @@
+# Default: normalize to LF in repo, native on checkout
+* text=auto
+
+# Shell scripts must be LF even on Windows (init-test-db.sh
+# падает с CRLF: "set: illegal option -")
+*.sh text eol=lf
+
+# Batch/PowerShell — CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary — не трогать
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
+# Lock-файлы — не мержить, генерировать заново
+package-lock.json -diff
+poetry.lock -diff
+uv.lock -diff
