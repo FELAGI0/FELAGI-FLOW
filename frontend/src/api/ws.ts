@@ -7,31 +7,54 @@ import type { ServerMessage } from "@/types/ws";
  * Особенности:
  * - токен передаётся в query (`?token=…`): браузерный WebSocket не умеет
  *   кастомные заголовки, поэтому access-токен идёт параметром URL;
- * - при разрыве — переподключение с экспоненциальной задержкой
- *   (1s, 2s, 4s …, максимум 30s);
+ * - при обычном сетевом разрыве — переподключение с экспоненциальной задержкой
+ *   (1s, 2s, 4s …) с ограничением числа попыток (5.C.2): исчерпав их, клиент
+ *   сообщает `onExhausted` — хук переключается на polling;
  * - после каждого переподключения сервер снова присылает `snapshot` со всеми
  *   шагами, поэтому клиент не обязан помнить состояние — он просто заменяет его.
  */
 
+/** Максимум попыток автопереподключения до перехода в fallback (polling). */
+export const DEFAULT_MAX_RECONNECT_ATTEMPTS = 3;
+
 const INITIAL_BACKOFF_MS = 1000;
 const MAX_BACKOFF_MS = 30_000;
 
-/** Близкие коды закрытия, при которых переподключаться бессмысленно. */
-const NO_RECONNECT_CODES = new Set([
+/** Коды закрытия, при которых переподключаться бессмысленно. */
+const FATAL_CLOSE_CODES = new Set([
     4401, // невалидный токен
     4404, // нет доступа/запуска
     4429, // превышен лимит соединений
 ]);
 
+export function isFatalCloseCode(code: number): boolean {
+    return FATAL_CLOSE_CODES.has(code);
+}
+
 export interface ExecutionLogsCallbacks {
+    /** Соединение установлено; поток живой. */
+    onOpen?: () => void;
     /** Снапшот: полное состояние (перезаписывает накопленное у клиента). */
     onSnapshot?: (message: Extract<ServerMessage, { type: "snapshot" }>) => void;
     /** Дельты: шаги, которых у клиента ещё нет. */
     onSteps?: (message: Extract<ServerMessage, { type: "steps" }>) => void;
     /** Запуск завершился; соединение будет закрыто сервером с кодом 1000. */
     onFinished?: (message: Extract<ServerMessage, { type: "finished" }>) => void;
+    /** Планируется переподключение; аргумент — номер попытки (1-based). */
+    onReconnecting?: (attempt: number) => void;
+    /** Все попытки исчерпаны — дальше нужен fallback (polling). */
+    onExhausted?: () => void;
+    /** Соединение закрыто; аргумент — код закрытия. */
+    onClose?: (code: number) => void;
     /** Ошибка соединения или прикладное закрытие; аргумент — причина. */
     onError?: (error: string) => void;
+}
+
+export interface ExecutionLogsOptions {
+    /** Явный токен; без него берётся из authStore. */
+    token?: string;
+    /** Предел попыток переподключения (по умолчанию DEFAULT_MAX_RECONNECT_ATTEMPTS). */
+    maxReconnectAttempts?: number;
 }
 
 export interface ExecutionLogsHandle {
@@ -47,7 +70,10 @@ function wsUrl(executionId: string, token: string): string {
 export function connectExecutionLogs(
     executionId: string,
     callbacks: ExecutionLogsCallbacks,
+    options: ExecutionLogsOptions = {},
 ): ExecutionLogsHandle {
+    const maxAttempts = options.maxReconnectAttempts ?? DEFAULT_MAX_RECONNECT_ATTEMPTS;
+
     let socket: WebSocket | null = null;
     let closed = false;
     let attempt = 0;
@@ -61,7 +87,7 @@ export function connectExecutionLogs(
 
     function open(): void {
         if (closed) return;
-        const token = useAuthStore.getState().accessToken;
+        const token = options.token ?? useAuthStore.getState().accessToken;
         if (!token) {
             callbacks.onError?.("Нет access-токена для подключения к live-логам");
             return;
@@ -72,6 +98,7 @@ export function connectExecutionLogs(
         socket.onopen = () => {
             // успешное подключение сбрасывает backoff
             attempt = 0;
+            callbacks.onOpen?.();
         };
 
         socket.onmessage = (event: MessageEvent<string>) => {
@@ -100,13 +127,21 @@ export function connectExecutionLogs(
 
         socket.onclose = (event: CloseEvent) => {
             socket = null;
+            // о закрытии сообщаем всегда, но решение о реконнекте — ниже
+            callbacks.onClose?.(event.code);
             if (closed) return;
-            if (NO_RECONNECT_CODES.has(event.code)) {
+            if (isFatalCloseCode(event.code)) {
                 callbacks.onError?.(`Соединение закрыто (код ${event.code})`);
                 return;
             }
             // 1000 — сервер завершил подписку (finished); переподключаться не нужно
             if (event.code === 1000) return;
+            if (attempt >= maxAttempts) {
+                // попытки исчерпаны: сигнал перейти на polling
+                callbacks.onExhausted?.();
+                return;
+            }
+            callbacks.onReconnecting?.(attempt + 1);
             scheduleReconnect();
         };
 

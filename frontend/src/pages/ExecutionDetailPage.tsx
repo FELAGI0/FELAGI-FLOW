@@ -1,14 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { cancelExecution, getExecution } from "@/api/executions";
+import { cancelExecution } from "@/api/executions";
 import { listWorkflows } from "@/api/workflows";
+import { ConnectionIndicator } from "@/components/ConnectionIndicator";
 import { JsonViewer } from "@/components/JsonViewer";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { useExecutionLogs } from "@/hooks/useExecutionLogs";
 import { formatDuration, formatRelative, shortId } from "@/lib/time";
+import { useAuthStore } from "@/stores/authStore";
 import type { ExecutionStep } from "@/types/execution";
 import { isTerminalStatus } from "@/types/execution";
 
@@ -21,12 +24,16 @@ function MetaItem({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
-function StepRow({ step }: { step: ExecutionStep }) {
+function StepRow({ step, isNew }: { step: ExecutionStep; isNew: boolean }) {
+    // развёрнутость — локальное состояние: новые шаги не сворачивают уже открытые
     const [open, setOpen] = useState(false);
     return (
         <>
             <tr
-                className="cursor-pointer border-b last:border-0 hover:bg-muted/40"
+                className={
+                    "cursor-pointer border-b last:border-0 hover:bg-muted/40 " +
+                    (isNew ? "animate-step-in" : "")
+                }
                 onClick={() => setOpen((current) => !current)}
                 data-testid={`step-row-${step.id}`}
             >
@@ -87,15 +94,12 @@ export function ExecutionDetailPage() {
     const { wsId = "", executionId = "" } = useParams();
     const queryClient = useQueryClient();
     const toast = useToast();
+    const accessToken = useAuthStore((state) => state.accessToken);
 
-    const executionQuery = useQuery({
-        queryKey: ["execution", executionId],
-        queryFn: () => getExecution(executionId),
-        refetchInterval: (query) => {
-            const status = query.state.data?.status;
-            return status && !isTerminalStatus(status) ? 3000 : false;
-        },
-    });
+    const { execution, steps, connectionState, error } = useExecutionLogs(
+        executionId,
+        accessToken,
+    );
 
     const workflowsQuery = useQuery({
         queryKey: ["workflows", wsId],
@@ -108,17 +112,51 @@ export function ExecutionDetailPage() {
             toast.show("Запуск отменён", "success");
             await queryClient.invalidateQueries({ queryKey: ["execution", executionId] });
         },
-        onError: (error) =>
-            toast.show(error instanceof Error ? error.message : "Не удалось отменить", "error"),
+        onError: (err) =>
+            toast.show(err instanceof Error ? err.message : "Не удалось отменить", "error"),
     });
 
-    const execution = executionQuery.data;
+    // отображаем «новизну» только что пришедших шагов (для анимации появления)
+    const knownIdsRef = useRef<Set<string>>(new Set());
+    const [newIds, setNewIds] = useState<Set<string>>(new Set());
+    useEffect(() => {
+        const fresh = new Set(
+            steps.map((step) => step.id).filter((id) => !knownIdsRef.current.has(id)),
+        );
+        knownIdsRef.current = new Set(steps.map((step) => step.id));
+        if (fresh.size > 0) setNewIds(fresh);
+    }, [steps]);
 
-    if (executionQuery.isLoading) {
-        return <p className="p-8 text-sm text-muted-foreground">Загрузка…</p>;
+    // автоскролл к последнему шагу, если пользователь не отскроллил вверх
+    const stepsEndRef = useRef<HTMLDivElement | null>(null);
+    const scrollRef = useRef<HTMLDivElement | null>(null);
+    const stickToBottomRef = useRef(true);
+    useEffect(() => {
+        if (stickToBottomRef.current) {
+            stepsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
+    }, [steps]);
+
+    function onStepsScroll() {
+        const el = scrollRef.current;
+        if (!el) return;
+        const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+        stickToBottomRef.current = atBottom;
     }
+
     if (!execution) {
-        return <p className="p-8 text-sm text-muted-foreground">Запуск не найден.</p>;
+        // соединение ещё поднимается или запуск недоступен
+        return (
+            <div className="mx-auto max-w-5xl p-8">
+                <div className="mb-4 flex items-center gap-3">
+                    <ConnectionIndicator state={connectionState} />
+                    {error && <span className="text-xs text-red-700">{error}</span>}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                    {connectionState === "closed" ? "Запуск не найден." : "Загрузка…"}
+                </p>
+            </div>
+        );
     }
 
     const workflowName =
@@ -145,8 +183,18 @@ export function ExecutionDetailPage() {
                         Execution {shortId(execution.id)}
                     </h1>
                     <StatusBadge status={execution.status} />
+                    <ConnectionIndicator state={connectionState} />
                 </div>
             </div>
+
+            {connectionState === "fallback" && (
+                <div
+                    className="mb-6 rounded-md border border-blue-300 bg-blue-50 px-4 py-3 text-sm text-blue-900"
+                    data-testid="fallback-banner"
+                >
+                    Live-логи недоступны, обновление каждые 3 секунды
+                </div>
+            )}
 
             <div className="mb-6 grid grid-cols-2 gap-4 rounded-md border bg-card p-4 sm:grid-cols-3">
                 <MetaItem label="Workflow">
@@ -221,9 +269,13 @@ export function ExecutionDetailPage() {
             )}
 
             <h2 className="mb-2 text-sm font-medium">Шаги</h2>
-            <div className="overflow-hidden rounded-md border bg-card">
+            <div
+                ref={scrollRef}
+                onScroll={onStepsScroll}
+                className="max-h-[28rem] overflow-auto rounded-md border bg-card"
+            >
                 <table className="w-full text-sm">
-                    <thead className="bg-muted/50 text-xs text-muted-foreground">
+                    <thead className="sticky top-0 bg-muted text-xs text-muted-foreground">
                         <tr>
                             <th className="w-6 px-3 py-2" />
                             <th className="px-3 py-2 text-left">Node</th>
@@ -234,10 +286,10 @@ export function ExecutionDetailPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {execution.steps.map((step) => (
-                            <StepRow key={step.id} step={step} />
+                        {steps.map((step) => (
+                            <StepRow key={step.id} step={step} isNew={newIds.has(step.id)} />
                         ))}
-                        {execution.steps.length === 0 && (
+                        {steps.length === 0 && (
                             <tr>
                                 <td
                                     colSpan={6}
@@ -249,6 +301,7 @@ export function ExecutionDetailPage() {
                         )}
                     </tbody>
                 </table>
+                <div ref={stepsEndRef} />
             </div>
         </div>
     );
