@@ -12,6 +12,7 @@ import uuid
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.engine.notify import notify_exec_log
 from app.engine.queue import claim_next, complete
 from app.engine.runner import ExecutionCancelled, NodeExecutionError, run_execution
 from app.shared.db import session_factory
@@ -30,7 +31,13 @@ def _request_shutdown() -> None:
 
 
 async def process_one(session: AsyncSession, execution: Execution, worker_id: str) -> None:
-    """Выполняет один запуск и закрывает его статус. Любая ошибка → complete(fail)."""
+    """Выполняет один запуск и закрывает его статус. Любая ошибка → complete(fail).
+
+    Шаги коммитятся сами (внутри run_execution, по одному). Здесь меняется только
+    финальный статус execution, и он коммитится вызывающим (main). Финальный
+    NOTIFY шлём в той же транзакции, что и смену статуса: иначе live-логи узнали
+    бы о завершении только по таймауту heartbeat (DESIGN.md §3, «финальный NOTIFY»).
+    """
     version = await session.get(WorkflowVersion, execution.workflow_version_id)
     if version is None:
         await complete(
@@ -39,6 +46,7 @@ async def process_one(session: AsyncSession, execution: Execution, worker_id: st
             success=False,
             error="pinned workflow version not found",
         )
+        await notify_exec_log(session, execution.id)
         return
 
     try:
@@ -53,6 +61,10 @@ async def process_one(session: AsyncSession, execution: Execution, worker_id: st
         await complete(session, execution.id, success=False, error=str(exc))
     else:
         await complete(session, execution.id, success=True)
+
+    # статус либо терминальный, либо снова queued (retry) — в обоих случаях
+    # подписчику WS полезно проснуться и перечитать состояние
+    await notify_exec_log(session, execution.id)
 
 
 async def main() -> None:

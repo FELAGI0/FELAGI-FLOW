@@ -58,11 +58,12 @@ python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
 
-# croniter и dateutil не поставляют py.typed: без этих override'ов mypy strict
-# падает на import-untyped, а `# type: ignore` в проекте запрещён (CLAUDE.md).
-# Типы этих библиотек всё равно не проверяются — override честнее точечного ignore
+# croniter, dateutil и asyncpg не поставляют py.typed: без этих override'ов
+# mypy strict падает на import-untyped, а `# type: ignore` в проекте запрещён
+# (CLAUDE.md). Типы этих библиотек всё равно не проверяются — override честнее
+# точечного ignore
 [[tool.mypy.overrides]]
-module = ["croniter", "dateutil", "dateutil.*"]
+module = ["croniter", "dateutil", "dateutil.*", "asyncpg", "asyncpg.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

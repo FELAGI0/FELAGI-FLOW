@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     # ключ Anthropic для LLM-узла (этап 6 заменит его на credentials воркспейса)
     anthropic_api_key: str = ""
 
+    # live-логи execution (этап 5.B): период ping, чтобы прокси не рвал idle-WS,
+    # и лимит одновременных WS-соединений на одного пользователя
+    ws_heartbeat_seconds: int = 30
+    ws_max_connections_per_user: int = 5
+
     @property
     def llm_models_list(self) -> list[str]:
         models: list[str] = json.loads(self.llm_models)

@@ -11,12 +11,13 @@ import uuid
 from collections import defaultdict, deque
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engine import expressions
 from app.engine.node_schemas import NODE_SCHEMAS, RetryConfig
 from app.engine.nodes import handle
+from app.engine.notify import notify_exec_log
 from app.engine.queue import heartbeat
 from app.shared.models import Execution, ExecutionStep, WorkflowVersion
 from app.shared.schemas.workflow import Graph, Node
@@ -26,6 +27,37 @@ IF_NODE_TYPE = "logic_if"
 # точка подмены для тестов: patching asyncio.sleep задел бы весь процесс,
 # включая пул соединений SQLAlchemy
 _sleep = asyncio.sleep
+
+
+class StepCounter:
+    """Счётчик шагов в пределах одного запуска: sequence = 1, 2, 3...
+
+    Вариант (b) из 5.B-fix: номер шага считаем в памяти, а не
+    `SELECT MAX(sequence)+1` на каждый шаг. Сид задаётся один раз в начале
+    run_execution (см. `_seed_counter`): при повторном запуске после reclaim
+    он продолжает нумерацию, а не начинает с 1 — иначе sequence продублировался бы.
+    """
+
+    def __init__(self, start: int = 1) -> None:
+        self._next = start
+
+    def take(self) -> int:
+        value = self._next
+        self._next += 1
+        return value
+
+
+async def _seed_counter(session: AsyncSession, execution_id: uuid.UUID) -> StepCounter:
+    """Счётчик, продолжающий нумерацию уже записанных шагов запуска.
+
+    При первичном запуске шагов нет → MAX = NULL → старт с 1.
+    """
+    last: int | None = await session.scalar(
+        select(func.max(ExecutionStep.sequence)).where(
+            ExecutionStep.execution_id == execution_id
+        )
+    )
+    return StepCounter(start=(last or 0) + 1)
 
 
 class NodeExecutionError(Exception):
@@ -102,6 +134,7 @@ def _reaching_handle(node_id: str, graph: Graph) -> str | None:
 async def _record_step(
     session: AsyncSession,
     execution_id: uuid.UUID,
+    sequence: int,
     node: Node,
     status: str,
     input_params: dict[str, Any] | None,
@@ -111,11 +144,20 @@ async def _record_step(
     duration_ms: int | None = None,
     attempt: int = 1,
 ) -> None:
+    """Записывает шаг и СРАЗУ коммитит его (5.B-fix).
+
+    Коммит на шаг, а не общий в конце запуска: live-логи показывают шаги по мере
+    выполнения, и при падении узла уже выполненные шаги остаются записанными.
+    NOTIFY идёт ДО коммита — Postgres доставляет уведомление только на commit
+    своей транзакции; notify после commit попал бы в следующую транзакцию и
+    уведомления по шагам схлопнулись бы.
+    """
     session.add(
         ExecutionStep(
             execution_id=execution_id,
             node_id=node.id,
             node_type=node.type,
+            sequence=sequence,
             attempt=attempt,
             status=status,
             input=input_params,
@@ -126,6 +168,8 @@ async def _record_step(
         )
     )
     await session.flush()
+    await notify_exec_log(session, execution_id)
+    await session.commit()
 
 
 def load_graph(version: WorkflowVersion) -> Graph:
@@ -140,6 +184,7 @@ async def _run_node_with_retry(
     resolved: dict[str, Any],
     context: dict[str, Any],
     retry: RetryConfig,
+    counter: StepCounter,
 ) -> dict[str, Any]:
     """Выполняет узел, повторяя при ошибке до retry.max_retries раз.
 
@@ -168,6 +213,7 @@ async def _run_node_with_retry(
             await _record_step(
                 session,
                 execution.id,
+                counter.take(),
                 node,
                 "succeeded",
                 resolved,
@@ -183,6 +229,7 @@ async def _run_node_with_retry(
         await _record_step(
             session,
             execution.id,
+            counter.take(),
             node,
             "failed",
             resolved,
@@ -207,11 +254,15 @@ async def run_execution(
 ) -> None:
     """Выполняет граф пиннутой версии. Бросает NodeExecutionError при падении узла.
 
-    Коммит — за вызывающим (worker loop): здесь только flush, чтобы шаги
-    фиксировались одной транзакцией с обновлением статуса execution.
+    Каждый шаг коммитится отдельно (внутри _record_step) — live-логи видят шаги
+    по мере выполнения, а при падении узла выполненные шаги уже зафиксированы.
+    Вызывающий (воркер) после успеха/падения коммитит только финальный статус
+    execution.
     """
     graph = load_graph(version)
     order = topological_order(graph)
+    # счётчик продолжает нумерацию: при rerun после reclaim старые шаги уже в БД
+    counter = await _seed_counter(session, execution.id)
 
     context: dict[str, Any] = {
         "nodes": {},
@@ -222,8 +273,11 @@ async def run_execution(
     if_branch: dict[str, str] = {}  # node_id If → выбранная ветка
 
     for node in order:
-        # heartbeat перед каждым узлом: долгий граф не должен считаться зависшим
+        # heartbeat перед каждым узлом: долгий граф не должен считаться зависшим.
+        # Коммитим heartbeat сразу: шаги коммитятся сами, и без этого продление
+        # лока потерялось бы между шагами.
         await heartbeat(session, execution.id, worker_id)
+        await session.commit()
 
         # отмена — best effort: флаг читаем из БД перед каждым узлом. Отдельный
         # scalar-select (не session.get) идёт в БД и видит чужой commit, минуя
@@ -235,7 +289,9 @@ async def run_execution(
             raise ExecutionCancelled("canceled")
 
         if node.id in skipped:
-            await _record_step(session, execution.id, node, "skipped", None, None)
+            await _record_step(
+                session, execution.id, counter.take(), node, "skipped", None, None
+            )
             continue
 
         # узел, достижимый только через невыбранную ветку If, — пропускаем
@@ -247,7 +303,9 @@ async def run_execution(
             )
             if parent is not None and if_branch.get(parent) not in (None, handle_taken):
                 skipped.update(_descendants(node.id, graph))
-                await _record_step(session, execution.id, node, "skipped", None, None)
+                await _record_step(
+                    session, execution.id, counter.take(), node, "skipped", None, None
+                )
                 continue
 
         schema = NODE_SCHEMAS.get(node.type)
@@ -257,7 +315,14 @@ async def run_execution(
             params = schema.params.model_validate(node.params).model_dump()
         except Exception as exc:
             await _record_step(
-                session, execution.id, node, "failed", node.params, None, str(exc)
+                session,
+                execution.id,
+                counter.take(),
+                node,
+                "failed",
+                node.params,
+                None,
+                str(exc),
             )
             raise NodeExecutionError(f"node '{node.id}': {exc}") from exc
 
@@ -266,7 +331,7 @@ async def run_execution(
         # retry валидирован схемой узла; отсутствие retry → без повторов
         retry = RetryConfig.model_validate(params.get("retry") or {})
         result = await _run_node_with_retry(
-            session, execution, node, worker_id, resolved, context, retry
+            session, execution, node, worker_id, resolved, context, retry, counter
         )
 
         context["nodes"][node.id] = {"output": result}

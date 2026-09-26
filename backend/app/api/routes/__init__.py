@@ -6,6 +6,7 @@ from app.api.routes.node_types import router as node_types_router
 from app.api.routes.schedules import router as schedules_router
 from app.api.routes.workflows import router as workflows_router
 from app.api.routes.workspaces import router as workspaces_router
+from app.api.routes.ws import router as ws_router
 
 __all__ = [
     "auth_router",
@@ -16,4 +17,5 @@ __all__ = [
     "schedules_router",
     "workflows_router",
     "workspaces_router",
+    "ws_router",
 ]

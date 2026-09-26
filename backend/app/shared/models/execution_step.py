@@ -27,6 +27,10 @@ class ExecutionStep(Base):
     node_type: Mapped[str] = mapped_column(String, nullable=False)
     # номер попытки узла (per-node retry, 4.C): 1, 2, 3... для одного node_id
     attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    # порядковый номер шага в запуске (DESIGN.md §2, ПРАВКА 11): 1, 2, 3...
+    # Задаёт runner счётчиком. Сортировать по нему, а не по created_at:
+    # created_at = func.now() = время транзакции, у шагов одного запуска совпадает.
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     # 'running'|'succeeded'|'failed'|'skipped'
     status: Mapped[str] = mapped_column(String, nullable=False)
     input: Mapped[dict[str, Any] | None] = mapped_column(

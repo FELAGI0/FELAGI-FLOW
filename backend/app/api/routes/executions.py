@@ -147,7 +147,7 @@ async def get_execution(
     steps = await session.scalars(
         select(ExecutionStep)
         .where(ExecutionStep.execution_id == execution.id)
-        .order_by(ExecutionStep.created_at, ExecutionStep.node_id)
+        .order_by(ExecutionStep.sequence)
     )
     base = _to_response(execution)
     return ExecutionDetailResponse(**base.model_dump(), steps=[_step_response(s) for s in steps])
