@@ -1,9 +1,10 @@
 import { ReactFlowProvider } from "@xyflow/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { ApiError } from "@/api/client";
+import { runWorkflow } from "@/api/executions";
 import { getWorkflow, listVersions, patchWorkflow, saveDraft } from "@/api/workflows";
 import { useToast } from "@/components/ui/toast";
 import { FlowCanvas } from "@/editor/FlowCanvas";
@@ -18,6 +19,7 @@ const EMPTY_GRAPH = { nodes: [], edges: [], layout: {} };
 
 export function EditorPage() {
     const { wsId = "", wfId = "" } = useParams();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const toast = useToast();
     const reset = useEditorStore((state) => state.reset);
@@ -92,6 +94,22 @@ export function EditorPage() {
 
     const latestVersion = versionsQuery.data?.[0]?.version ?? null;
 
+    const runMutation = useMutation({
+        mutationFn: () => runWorkflow(wfId),
+        onSuccess: (execution) => {
+            // сразу открываем детали запуска — там live/статус (5.C.2 добавит ленту)
+            navigate(`/workspaces/${wsId}/executions/${execution.id}`);
+        },
+        onError: (error) => {
+            // 409 — workflow не опубликован: подсказка вместо общей ошибки
+            if (error instanceof ApiError && error.status === 409) {
+                toast.show("Workflow не опубликован — сначала опубликуйте", "error");
+            } else {
+                toast.show(error instanceof Error ? error.message : "Не удалось запустить", "error");
+            }
+        },
+    });
+
     return (
         <div className="flex h-screen flex-col">
             <Toolbar
@@ -100,11 +118,13 @@ export function EditorPage() {
                 lastVersion={latestVersion}
                 isDirty={isDirty}
                 isSaving={saveMutation.isPending}
+                isRunning={runMutation.isPending}
                 onRename={(next) => {
                     setName(next);
                     renameMutation.mutate(next);
                 }}
                 onSave={() => saveMutation.mutate()}
+                onRun={() => runMutation.mutate()}
                 onOpenVersions={() => setVersionsOpen(true)}
                 onOpenPublish={() => setPublishOpen(true)}
                 backTo={`/workspaces/${wsId}/workflows`}

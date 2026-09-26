@@ -9,8 +9,10 @@ interface ToolbarProps {
     lastVersion: number | null;
     isDirty: boolean;
     isSaving: boolean;
+    isRunning: boolean;
     onRename: (name: string) => void;
     onSave: () => void;
+    onRun: () => void;
     onOpenVersions: () => void;
     onOpenPublish: () => void;
     backTo: string;
@@ -28,8 +30,10 @@ export function Toolbar({
     lastVersion,
     isDirty,
     isSaving,
+    isRunning,
     onRename,
     onSave,
+    onRun,
     onOpenVersions,
     onOpenPublish,
     backTo,
@@ -72,6 +76,15 @@ export function Toolbar({
                     data-testid="save-button"
                 >
                     {isSaving ? "Сохранение…" : "Сохранить"}
+                </Button>
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onRun}
+                    disabled={isRunning}
+                    data-testid="run-button"
+                >
+                    {isRunning ? "Запуск…" : "Запустить"}
                 </Button>
                 <Button size="sm" onClick={onOpenPublish} data-testid="publish-button">
                     Опубликовать

@@ -71,6 +71,11 @@ function WorkflowRow({
             </span>
 
             <Button variant="outline" size="sm" asChild>
+                <Link to={`/workspaces/${wsId}/executions?workflow_id=${workflow.id}`}>
+                    Запуски
+                </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
                 <Link to={`/workspaces/${wsId}/workflows/${workflow.id}/edit`}>Редактировать</Link>
             </Button>
             <Button

@@ -4,7 +4,10 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-d
 import { PrivateRoute } from "@/components/PrivateRoute";
 import { ToastProvider } from "@/components/ui/toast";
 import { EditorPage } from "@/editor/EditorPage";
+import { ExecutionDetailPage } from "@/pages/ExecutionDetailPage";
+import { ExecutionsPage } from "@/pages/ExecutionsPage";
 import { LoginPage } from "@/pages/LoginPage";
+import { NotFoundPage } from "@/pages/NotFoundPage";
 import { WorkflowListPage } from "@/pages/WorkflowListPage";
 import { WorkspaceListPage } from "@/pages/WorkspaceListPage";
 
@@ -42,6 +45,27 @@ export function App() {
                                     <EditorPage />
                                 </PrivateRoute>
                             }
+                        />
+                        <Route
+                            path="/workspaces/:wsId/executions"
+                            element={
+                                <PrivateRoute>
+                                    <ExecutionsPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/workspaces/:wsId/executions/:executionId"
+                            element={
+                                <PrivateRoute>
+                                    <ExecutionDetailPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        {/* Replay появится в 7.C — пока заглушка 404 */}
+                        <Route
+                            path="/workspaces/:wsId/executions/:executionId/replay"
+                            element={<NotFoundPage />}
                         />
                         <Route path="*" element={<Navigate to="/workspaces" replace />} />
                     </Routes>
