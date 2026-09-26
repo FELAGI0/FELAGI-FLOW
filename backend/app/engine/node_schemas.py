@@ -9,6 +9,16 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+# зона по умолчанию для cron-триггера; вынесена в константу, чтобы валидатор,
+# планировщик и схема узла не расходились
+DEFAULT_TIMEZONE = "UTC"
+
+# метод по умолчанию для webhook-триггера; фабрика нужна, чтобы вывод типа был
+# именно list[Literal["GET","POST"]]: лямбда с одним "POST" выводится как
+# list[Literal["POST"]], и list-инвариантность не даёт присвоить его полю
+def _default_webhook_methods() -> list[Literal["GET", "POST"]]:
+    return ["POST"]
+
 
 class RetryConfig(BaseModel):
     """Политика повторов узла (DESIGN.md §4): общая для всех типов узлов.
@@ -85,6 +95,22 @@ class LlmParams(BaseNodeParams):
     temperature: float = Field(default=1.0, ge=0.0, le=2.0)
 
 
+class CronParams(BaseNodeParams):
+    """Cron-триггер: расписание запуска в указанной зоне.
+
+    timezone — IANA-имя ("UTC", "Europe/Berlin"); валидируется в graph_validator.
+    """
+
+    cron_expr: str
+    timezone: str = DEFAULT_TIMEZONE
+
+
+class WebhookParams(BaseNodeParams):
+    """Webhook-триггер: разрешённые HTTP-методы для приёма."""
+
+    methods: list[Literal["GET", "POST"]] = Field(default_factory=_default_webhook_methods)
+
+
 @dataclass(frozen=True)
 class NodeSchema:
     label: str
@@ -95,6 +121,8 @@ class NodeSchema:
 
 NODE_SCHEMAS: dict[str, NodeSchema] = {
     "trigger_manual": NodeSchema("Manual Trigger", "trigger", TriggerManualParams, ["default"]),
+    "trigger_cron": NodeSchema("Cron Trigger", "trigger", CronParams, ["default"]),
+    "trigger_webhook": NodeSchema("Webhook Trigger", "trigger", WebhookParams, ["default"]),
     "transform_set": NodeSchema("Set", "transform", TransformSetParams, ["default"]),
     "debug": NodeSchema("Debug", "debug", DebugParams, ["default"]),
     "logic_if": NodeSchema("If", "logic", LogicIfParams, ["true", "false"]),

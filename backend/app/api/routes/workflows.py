@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import CurrentUser, DbSession
 from app.engine.graph_validator import validate_graph
 from app.engine.node_schemas import NODE_SCHEMAS
+from app.engine.trigger_sync import sync_triggers
 from app.shared.models import (
     Workflow,
     WorkflowVersion,
@@ -269,12 +270,18 @@ async def publish_workflow(
             detail="Workflow has no versions to publish",
         )
 
-    errors = validate_graph(Graph.model_validate(latest.graph), NODE_SCHEMAS)
+    graph = Graph.model_validate(latest.graph)
+    errors = validate_graph(graph, NODE_SCHEMAS)
     if errors:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"message": "Graph validation failed", "errors": errors},
         )
+
+    # schedules/webhook_routes — производные от графа: синхронизируем их той же
+    # транзакцией, что и смену статуса, иначе получим активный workflow без
+    # расписаний (или с расписаниями от прошлой версии)
+    await sync_triggers(session, workflow.workspace_id, workflow.id, graph)
 
     workflow.status = "active"
     workflow.published_version_id = latest.id

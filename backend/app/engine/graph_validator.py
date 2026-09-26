@@ -9,11 +9,14 @@ from collections import defaultdict, deque
 
 from pydantic import ValidationError
 
-from app.engine.node_schemas import NodeSchema
-from app.shared.schemas.workflow import Edge, Graph
+from app.engine.cron import is_valid_cron, is_valid_timezone
+from app.engine.node_schemas import DEFAULT_TIMEZONE, NodeSchema
+from app.shared.schemas.workflow import Edge, Graph, Node
 
 IF_NODE_TYPE = "logic_if"
 IF_HANDLES = ("true", "false")
+CRON_NODE_TYPE = "trigger_cron"
+WEBHOOK_NODE_TYPE = "trigger_webhook"
 
 
 def validate_graph(graph: Graph, node_schemas: dict[str, NodeSchema]) -> list[str]:
@@ -106,4 +109,45 @@ def validate_graph(graph: Graph, node_schemas: dict[str, NodeSchema]) -> list[st
                 location = ".".join(str(part) for part in detail["loc"]) or "(params)"
                 errors.append(f"node '{node.id}': invalid parameter '{location}' — {detail['msg']}")
 
+    # cron/webhook: схема проверяет типы, но не семантику (валидность выражения и
+    # зоны, непустоту списка методов) — это отдельные проверки ниже. Выполняются
+    # только если базовые типы прошли, иначе params.get вернул бы не то, что ждём
+    for node in nodes:
+        if node.type == CRON_NODE_TYPE:
+            errors.extend(_check_cron_node(node))
+        elif node.type == WEBHOOK_NODE_TYPE:
+            errors.extend(_check_webhook_node(node))
+
+    return errors
+
+
+def _check_cron_node(node: Node) -> list[str]:
+    """cron_expr валиден по croniter, timezone существует в базе зон."""
+    errors: list[str] = []
+    cron_expr = node.params.get("cron_expr")
+    if isinstance(cron_expr, str) and cron_expr:
+        if not is_valid_cron(cron_expr):
+            errors.append(f"node '{node.id}': invalid cron_expr '{cron_expr}'")
+    elif cron_expr is not None and not isinstance(cron_expr, str):
+        errors.append(f"node '{node.id}': cron_expr must be a string")
+
+    timezone = node.params.get("timezone", DEFAULT_TIMEZONE)
+    if not isinstance(timezone, str) or not is_valid_timezone(timezone):
+        errors.append(f"node '{node.id}': unknown timezone '{timezone}'")
+    return errors
+
+
+def _check_webhook_node(node: Node) -> list[str]:
+    """methods — непустой список из GET/POST."""
+    errors: list[str] = []
+    methods = node.params.get("methods")
+    if methods is None:
+        # поле необязательное: дефолт схемы = ["POST"]
+        return errors
+    if not isinstance(methods, list) or not methods:
+        errors.append(f"node '{node.id}': methods must be a non-empty list")
+        return errors
+    for method in methods:
+        if method not in ("GET", "POST"):
+            errors.append(f"node '{node.id}': unsupported method '{method}'")
     return errors

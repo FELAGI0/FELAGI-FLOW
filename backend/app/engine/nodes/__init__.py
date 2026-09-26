@@ -16,12 +16,16 @@ from app.engine.nodes.http import handle_http
 from app.engine.nodes.llm import handle_llm
 from app.engine.nodes.logic_if import handle_logic_if
 from app.engine.nodes.transform_set import handle_transform_set
+from app.engine.nodes.trigger_cron import handle_trigger_cron
 from app.engine.nodes.trigger_manual import handle_trigger_manual
+from app.engine.nodes.trigger_webhook import handle_trigger_webhook
 
 NodeHandler = Callable[[dict[str, Any], dict[str, Any]], Awaitable[dict[str, Any]]]
 
 HANDLERS: dict[str, NodeHandler] = {
     "trigger_manual": handle_trigger_manual,
+    "trigger_cron": handle_trigger_cron,
+    "trigger_webhook": handle_trigger_webhook,
     "transform_set": handle_transform_set,
     "debug": handle_debug,
     "logic_if": handle_logic_if,
