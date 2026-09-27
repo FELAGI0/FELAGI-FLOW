@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     ws_heartbeat_seconds: int = 30
     ws_max_connections_per_user: int = 5
 
+    # как часто воркер возвращает в очередь запуски умерших воркеров
+    # (см. app/worker/__main__.py, maybe_reclaim)
+    reclaim_interval_seconds: int = 30
+
     @property
     def llm_models_list(self) -> list[str]:
         models: list[str] = json.loads(self.llm_models)

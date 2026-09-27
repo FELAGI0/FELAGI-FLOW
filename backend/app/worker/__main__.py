@@ -2,19 +2,26 @@
 
 Один процесс — один воркер; масштабирование — больше контейнеров
 (docker compose --scale worker=N). Планировщик отдельно (scheduler).
+
+Каждая итерация сначала возвращает в очередь задачи умерших воркеров
+(reclaim_stale, раз в RECLAIM_INTERVAL_SECONDS), затем забирает одну задачу.
+Reclaim идёт перед claim, чтобы зависшие запуски вернулись в пул, даже когда
+у этого воркера своей работы нет.
 """
 
 import asyncio
 import contextlib
 import signal
 import uuid
+from datetime import UTC, datetime
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engine.notify import notify_exec_log
-from app.engine.queue import claim_next, complete
+from app.engine.queue import claim_next, complete, reclaim_stale
 from app.engine.runner import ExecutionCancelled, NodeExecutionError, run_execution
+from app.shared.config import settings
 from app.shared.db import session_factory
 from app.shared.logging import setup_logging
 from app.shared.models import Execution, WorkflowVersion
@@ -23,11 +30,36 @@ logger = structlog.get_logger()
 
 POLL_INTERVAL_SECONDS = 1.0
 
+# сколько «молчания» воркера считать падением (reclaim)
+HEARTBEAT_TIMEOUT_SECONDS = 60
+
 _shutdown = asyncio.Event()
 
 
 def _request_shutdown() -> None:
     _shutdown.set()
+
+
+async def maybe_reclaim(
+    session: AsyncSession,
+    last_reclaim_at: datetime | None,
+    now: datetime | None = None,
+    interval_seconds: int | None = None,
+) -> tuple[int, datetime]:
+    """Возвращает в очередь задачи умерших воркеров, если пришло время.
+
+    Вынесена из цикла как чистая по смыслу функция: интервал сравнивается в
+    памяти, к БД идём только когда срок наступил. Возвращает (reclaimed,
+    новое время последнего reclaim).
+    """
+    moment = now or datetime.now(UTC)
+    interval = settings.reclaim_interval_seconds if interval_seconds is None else interval_seconds
+
+    if last_reclaim_at is not None and (moment - last_reclaim_at).total_seconds() < interval:
+        return 0, last_reclaim_at
+
+    reclaimed = await reclaim_stale(session, heartbeat_timeout_seconds=HEARTBEAT_TIMEOUT_SECONDS)
+    return reclaimed, moment
 
 
 async def process_one(session: AsyncSession, execution: Execution, worker_id: str) -> None:
@@ -78,8 +110,25 @@ async def main() -> None:
         with contextlib.suppress(NotImplementedError):
             loop.add_signal_handler(sig, _request_shutdown)
 
+    # время последнего reclaim; None — ещё ни разу (первый пройдёт сразу)
+    last_reclaim_at: datetime | None = None
+
     while not _shutdown.is_set():
         async with session_factory() as session:
+            # reclaim идёт ПЕРЕД claim: задачи умерших воркеров должны вернуться
+            # в общий пул, в том числе когда своей работы у этого воркера нет.
+            # Падение reclaim не должно ронять цикл — логируем и продолжаем.
+            try:
+                reclaimed, last_reclaim_at = await maybe_reclaim(
+                    session, last_reclaim_at
+                )
+                if reclaimed > 0:
+                    logger.info("worker.reclaimed", count=reclaimed)
+                    await session.commit()
+            except Exception as exc:
+                await session.rollback()
+                logger.error("worker.reclaim_failed", error=str(exc))
+
             execution = await claim_next(session, worker_id)
             if execution is None:
                 await session.commit()

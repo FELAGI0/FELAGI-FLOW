@@ -4,6 +4,17 @@ x-backend-env: &backend-env
   JWT_SECRET_KEY: ${JWT_SECRET_KEY:?set in .env}
   LLM_MODELS: ${LLM_MODELS:-[]}
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  # без этих строк значения из .env не доходят до контейнера
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  # тонкая настройка: необязательна, дефолты заданы в app/shared/config.py
+  ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+  REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
+  INVITATION_EXPIRE_DAYS: ${INVITATION_EXPIRE_DAYS:-7}
+  WS_HEARTBEAT_SECONDS: ${WS_HEARTBEAT_SECONDS:-30}
+  WS_MAX_CONNECTIONS_PER_USER: ${WS_MAX_CONNECTIONS_PER_USER:-5}
+  RECLAIM_INTERVAL_SECONDS: ${RECLAIM_INTERVAL_SECONDS:-30}
 
 x-backend: &backend
   image: felagi-flow-backend:0.1.0
