@@ -124,6 +124,85 @@ describe("useExecutionLogs", () => {
         rendered.unmount();
     });
 
+    it("finished → дочитывает свежие данные из REST (attempts/started_at/finished_at)", async () => {
+        // снапшот отдан на подключении: status=queued, метаданные ещё пустые
+        const queued: Execution = {
+            ...EXECUTION,
+            status: "queued",
+            attempts: 0,
+            started_at: null,
+            finished_at: null,
+        };
+        const fresh: Execution = {
+            ...EXECUTION,
+            status: "succeeded",
+            attempts: 1,
+            started_at: "2026-09-26T12:00:05Z",
+            finished_at: "2026-09-26T12:00:06Z",
+        };
+        const fetchMock = vi.fn().mockResolvedValue(
+            new Response(JSON.stringify({ ...fresh, steps: [step("s1"), step("s2")] }), {
+                status: 200,
+                headers: { "Content-Type": "application/json" },
+            }),
+        );
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { rendered, socket } = await mountLive();
+        await act(async () => {
+            socket.simulateMessage({ type: "snapshot", execution: queued, steps: [] });
+        });
+        // до завершения — устаревшие метаданные из снапшота
+        expect(rendered.result.current.execution?.attempts).toBe(0);
+        expect(rendered.result.current.execution?.started_at).toBeNull();
+
+        await act(async () => {
+            socket.simulateMessage({ type: "finished", status: "succeeded", error: null });
+            // даём in-flight getExecution дозреть
+            await Promise.resolve();
+        });
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(fetchMock).toHaveBeenCalled();
+        const calledUrl = fetchMock.mock.calls[0]?.[0] as string;
+        expect(calledUrl).toBe("/api/executions/exec-1");
+
+        const execution = rendered.result.current.execution;
+        expect(execution?.status).toBe("succeeded");
+        expect(execution?.attempts).toBe(1);
+        expect(execution?.started_at).toBe("2026-09-26T12:00:05Z");
+        expect(execution?.finished_at).toBe("2026-09-26T12:00:06Z");
+        // шаги тоже заменены свежими из REST
+        expect(rendered.result.current.steps.map((s) => s.id)).toEqual(["s1", "s2"]);
+        rendered.unmount();
+    });
+
+    it("finished: если REST недоступен — не падает, данные из снапшота остаются", async () => {
+        // fetch по умолчанию (из beforeEach) отклоняется
+        const queued: Execution = { ...EXECUTION, status: "queued", attempts: 0, started_at: null };
+        const { rendered, socket } = await mountLive();
+        await act(async () => {
+            socket.simulateMessage({ type: "snapshot", execution: queued, steps: [] });
+        });
+        await act(async () => {
+            socket.simulateMessage({ type: "finished", status: "failed", error: "boom" });
+            await Promise.resolve();
+        });
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        // оптимистичный статус из WS сохранился, старые метаданные не потеряны
+        const execution = rendered.result.current.execution;
+        expect(execution?.status).toBe("failed");
+        expect(execution?.error).toBe("boom");
+        expect(execution?.attempts).toBe(0);
+        expect(rendered.result.current.connectionState).toBe("closed");
+        rendered.unmount();
+    });
+
     it("close 4401 → closed, без реконнекта", async () => {
         const { rendered, socket } = await mountLive();
         await act(async () => {

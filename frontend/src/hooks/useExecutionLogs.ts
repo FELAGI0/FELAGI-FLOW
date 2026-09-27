@@ -12,6 +12,11 @@ import type { Execution, ExecutionStep } from "@/types/execution";
  * состояние, `steps` добавляет новые шаги (дедупликация по id), `finished`
  * фиксирует финальный статус.
  *
+ * `snapshot` снимается на подключении, поэтому в нём устаревшие метаданные
+ * (attempts/started_at/finished_at). `finished` несёт только status/error, так
+ * что после завершения дочитываем актуальные данные через
+ * `GET /api/executions/{id}` и заменяем ими состояние (вариант A, фикс 5.C.3).
+ *
  * Если WS не поднимается (исчерпаны попытки переподключения) — переходим в
  * `fallback`: включаем polling через TanStack Query, чтобы UI не «замер».
  * При постоянных ошибках (невалидный токен/нет доступа) — `closed`, без реконнекта.
@@ -72,6 +77,9 @@ export function useExecutionLogs(
         if (!executionId) return;
         setConnectionState("connecting");
         setError(null);
+        // защита от setState после размонтирования/смены id: in-flight запрос
+        // getExecution из onFinished может завершиться уже «не в том» эффекте
+        let cancelled = false;
 
         const handle = connectExecutionLogs(
             executionId,
@@ -84,12 +92,27 @@ export function useExecutionLogs(
                 },
                 onSteps: (message) => setSteps((current) => mergeSteps(current, message.steps)),
                 onFinished: (message) => {
+                    // оптимистично фиксируем статус из WS: если REST не ответит,
+                    // статус всё равно правильный
                     setExecution((current) =>
                         current
                             ? { ...current, status: message.status, error: message.error }
                             : current,
                     );
                     setConnectionState("closed");
+                    // WS-снапшот снят на подключении (обычно status=queued), в нём
+                    // устаревшие attempts/started_at/finished_at; `finished` их не
+                    // несёт — дочитываем актуальные данные из REST
+                    void (async () => {
+                        try {
+                            const fresh = await getExecution(executionId);
+                            if (cancelled) return;
+                            setExecution(fresh);
+                            setSteps(fresh.steps);
+                        } catch {
+                            // REST недоступен — оставляем данные из снапшота
+                        }
+                    })();
                 },
                 onReconnecting: () => setConnectionState("reconnecting"),
                 onExhausted: () => setConnectionState("fallback"),
@@ -108,7 +131,10 @@ export function useExecutionLogs(
             { token: accessToken ?? undefined },
         );
 
-        return () => handle.close();
+        return () => {
+            cancelled = true;
+            handle.close();
+        };
     }, [executionId, accessToken]);
 
     return { execution, steps, connectionState, error };
