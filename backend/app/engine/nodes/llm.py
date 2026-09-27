@@ -1,26 +1,18 @@
-"""LLM (Claude): вызов Anthropic с промптом и учётом usage.
+"""LLM: вызов OpenAI-совместимого API с промптом и учётом usage.
 
-Ключ берётся из ANTHROPIC_API_KEY (этап 6 заменит на credentials воркспейса).
-Модель валидируется против LLM_MODELS из настроек, если список задан.
+Ключ и base_url берутся из настроек (LLM_API_KEY / LLM_BASE_URL; этап 6 заменит
+их на credentials воркспейса). Модель валидируется против LLM_MODELS, если
+список задан.
 """
 
 from typing import Any
 
-import anthropic
+import openai
+from openai import AsyncOpenAI
 
 from app.shared.config import settings
 
 DEFAULT_TIMEOUT_SECONDS = 60.0
-
-
-def _extract_text(message: anthropic.types.Message) -> str:
-    """Собирает текстовые блоки ответа в одну строку."""
-    parts: list[str] = []
-    for block in message.content:
-        text = getattr(block, "text", None)
-        if isinstance(text, str):
-            parts.append(text)
-    return "".join(parts)
 
 
 async def handle_llm(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
@@ -30,42 +22,54 @@ async def handle_llm(params: dict[str, Any], context: dict[str, Any]) -> dict[st
 
     model = str(params.get("model", ""))
     available = settings.llm_models_list
+    # дефолт — первая из LLM_MODELS; только затем проверяем, что модель разрешена
+    if not model:
+        model = available[0] if available else ""
     if available and model not in available:
         return {
             "error": f"model '{model}' not in LLM_MODELS {available}",
         }
-    if not model:
-        model = available[0] if available else ""
 
-    api_key = settings.anthropic_api_key
+    api_key = settings.llm_api_key
     if not api_key:
-        return {"error": "ANTHROPIC_API_KEY is not configured"}
+        return {"error": "LLM_API_KEY is not configured"}
 
-    client = anthropic.AsyncAnthropic(api_key=api_key, timeout=DEFAULT_TIMEOUT_SECONDS)
+    client = AsyncOpenAI(
+        api_key=api_key,
+        base_url=settings.llm_base_url,
+        timeout=DEFAULT_TIMEOUT_SECONDS,
+    )
+
+    # system_prompt (если задан) идёт отдельным сообщением перед пользовательским
+    messages: list[dict[str, str]] = []
+    if params.get("system_prompt"):
+        messages.append({"role": "system", "content": str(params["system_prompt"])})
+    messages.append({"role": "user", "content": str(prompt)})
 
     kwargs: dict[str, Any] = {
         "model": model,
+        "messages": messages,
         "max_tokens": int(params.get("max_tokens", 1024)),
-        "messages": [{"role": "user", "content": str(prompt)}],
     }
     if params.get("temperature") is not None:
         kwargs["temperature"] = float(params["temperature"])
-    if params.get("system_prompt"):
-        kwargs["system"] = str(params["system_prompt"])
 
     try:
-        message = await client.messages.create(**kwargs)
-    except anthropic.APIError as exc:
-        return {"error": f"anthropic API error: {exc}"}
+        response = await client.chat.completions.create(**kwargs)
+    except openai.APIError as exc:
+        return {"error": f"llm API error: {exc}"}
     except Exception as exc:
-        return {"error": f"anthropic request failed: {exc}"}
+        return {"error": f"llm request failed: {exc}"}
 
+    choice = response.choices[0]
+    content = choice.message.content
+    usage = response.usage
     return {
-        "text": _extract_text(message),
+        "text": content or "",
         "usage": {
-            "input_tokens": message.usage.input_tokens,
-            "output_tokens": message.usage.output_tokens,
+            "input_tokens": usage.prompt_tokens if usage else None,
+            "output_tokens": usage.completion_tokens if usage else None,
         },
-        "model": message.model,
-        "stop_reason": message.stop_reason,
+        "model": response.model,
+        "stop_reason": choice.finish_reason,
     }

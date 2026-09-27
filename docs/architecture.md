@@ -29,7 +29,7 @@
                   (claim + run)             │                 (cron, tick 15s)
                         │                   │
                         ▼                   │
-              внешние API (Anthropic, HTTP) │
+              внешние API (LLM, HTTP)      │
                                             │
                         API держит LISTEN ──┘
                         → fan-out в свои WS-соединения
@@ -161,7 +161,7 @@ API (LISTEN exec_log): payload → очередь каждого WS-соедин
 |---|---|---|
 | **PostgreSQL 16** | да | Данные, очередь, LISTEN/NOTIFY. Без неё стек не стартует. |
 | **Caddy** | да (в compose) | Единая точка входа, TLS-терминация в проде, статика SPA. |
-| **Anthropic API** | нет | Только узел LLM. Без `ANTHROPIC_API_KEY` узел возвращает ошибку шага `ANTHROPIC_API_KEY is not configured`, остальное работает. |
+| **LLM API (OpenAI-совместимый)** | нет | Только узел LLM. Без `LLM_API_KEY` узел возвращает ошибку шага `LLM_API_KEY is not configured`, остальное работает. Адрес задаётся `LLM_BASE_URL`. |
 | **Внешние HTTP-эндпоинты** | нет | Только узел HTTP Request; вызываются самим пользователем. |
 
 Никаких других внешних сервисов нет: retry, очередь, уведомления и планировщик

@@ -1,7 +1,7 @@
 """Реестр обработчиков узлов.
 
 Все обработчики async: action_http и action_llm выполняют ввод-вывод
-(httpx, anthropic SDK), поэтому единый интерфейс — coroutine-функция.
+(httpx, openai SDK), поэтому единый интерфейс — coroutine-функция.
 
 handler(params, context) -> dict — выход узла, который кладётся в
 context["nodes"][node_id]["output"] и доступен другим узлам через

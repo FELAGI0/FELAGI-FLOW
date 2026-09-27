@@ -10,7 +10,7 @@
 
 - **Визуальный редактор графа** (React Flow): триггеры → действия, ветвление If.
 - **Триггеры**: ручной запуск, cron-расписание, публичный вебхук.
-- **Действия**: HTTP Request, LLM (Anthropic Claude), Set, If, Debug.
+- **Действия**: HTTP Request, LLM (OpenAI-совместимый API), Set, If, Debug.
 - **Live-логи выполнения** через WebSocket (LISTEN/NOTIFY fan-out).
 - **Retry-политики per-node** (`max_retries`, `backoff`: fixed/exponential).
 - **Мультитенантность**: workspaces, роли (owner/admin/member), приглашения.
@@ -23,7 +23,7 @@
 ## Стек
 
 **Backend:** Python 3.13, FastAPI, SQLAlchemy 2.0 (async), Alembic,
-PostgreSQL 16, asyncpg, croniter, `anthropic` SDK, PyJWT, argon2.
+PostgreSQL 16, asyncpg, croniter, `openai` SDK, PyJWT, argon2.
 
 **Frontend:** React 19, TypeScript 5.9, Vite 7, React Flow 12, TanStack Query,
 Zustand, Tailwind 4.
@@ -50,7 +50,7 @@ Zustand, Tailwind 4.
                               (claim + run)               │              (cron, tick 15s)
                                     │                     │
                                     ▼                     │
-                       внешние API (Anthropic, HTTP)      │
+                       внешние API (LLM, HTTP)           │
                                                           │
                        API держит LISTEN ─────────────────┘
                        → fan-out в WebSocket-соединения

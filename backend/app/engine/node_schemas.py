@@ -127,5 +127,5 @@ NODE_SCHEMAS: dict[str, NodeSchema] = {
     "debug": NodeSchema("Debug", "debug", DebugParams, ["default"]),
     "logic_if": NodeSchema("If", "logic", LogicIfParams, ["true", "false"]),
     "action_http": NodeSchema("HTTP Request", "action", HttpParams, ["default"]),
-    "action_llm": NodeSchema("LLM (Claude)", "action", LlmParams, ["default"]),
+    "action_llm": NodeSchema("LLM", "action", LlmParams, ["default"]),
 }

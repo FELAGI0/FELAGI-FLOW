@@ -11,7 +11,8 @@ dependencies = [
     "pydantic-settings==2.15.0",
     "email-validator==2.3.0",
     "structlog==26.1.0",
-    "anthropic==1.8.0",
+    # LLM-узел говорит с OpenAI-совместимым API (base_url задаётся в настройках)
+    "openai==3.19.2",
     "authlib==1.8.0",
     "cryptography==50.0.1",
     "pyjwt==2.14.0",

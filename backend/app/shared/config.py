@@ -8,7 +8,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://felagi:felagi@localhost:5432/felagi"
     fernet_key: str = ""
-    # JSON-массив строк, см. DESIGN.md §1 «Модели Anthropic»
+    # JSON-массив разрешённых моделей LLM-узла; пусто = любые
     llm_models: str = "[]"
     log_level: str = "INFO"
 
@@ -24,8 +24,10 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost"
     invitation_expire_days: int = 7
 
-    # ключ Anthropic для LLM-узла (этап 6 заменит его на credentials воркспейса)
-    anthropic_api_key: str = ""
+    # ключ и адрес OpenAI-совместимого API для LLM-узла
+    # (этап 6 заменит это на credentials воркспейса)
+    llm_base_url: str = "http://185.221.214.224:4100/v1"
+    llm_api_key: str = ""
 
     # live-логи execution (этап 5.B): период ping, чтобы прокси не рвал idle-WS,
     # и лимит одновременных WS-соединений на одного пользователя

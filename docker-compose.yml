@@ -5,7 +5,8 @@ x-backend-env: &backend-env
   LLM_MODELS: ${LLM_MODELS:-[]}
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
   # без этих строк значения из .env не доходят до контейнера
-  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  LLM_API_KEY: ${LLM_API_KEY:-}
+  LLM_BASE_URL: ${LLM_BASE_URL:-http://185.221.214.224:4100/v1}
   FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
   COOKIE_SECURE: ${COOKIE_SECURE:-false}
   # тонкая настройка: необязательна, дефолты заданы в app/shared/config.py
