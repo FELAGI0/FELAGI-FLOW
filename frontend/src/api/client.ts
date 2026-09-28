@@ -1,5 +1,13 @@
 import { useAuthStore } from "@/stores/authStore";
 
+/**
+ * База API. Пусто по умолчанию — тогда запросы идут на тот же origin (локально
+ * фронт и api отдаёт один Caddy). В проде фронт (Vercel) и api (Render) живут
+ * на разных доменах, поэтому задаётся VITE_API_URL, напр. https://api.example.com.
+ * Слэш на конце срезаем, чтобы `${API_BASE}${path}` не давал `//`.
+ */
+export const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
+
 export class ApiError extends Error {
     status: number;
     body: unknown;
@@ -46,7 +54,7 @@ async function refreshAccessToken(): Promise<boolean> {
     if (refreshInFlight === null) {
         refreshInFlight = (async () => {
             try {
-                const response = await fetch("/api/auth/refresh", {
+                const response = await fetch(`${API_BASE}/api/auth/refresh`, {
                     method: "POST",
                     credentials: "include",
                 });
@@ -70,7 +78,7 @@ async function rawRequest(path: string, options: RequestOptions): Promise<Respon
     if (options.body !== undefined) headers["Content-Type"] = "application/json";
     if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
 
-    return fetch(path, {
+    return fetch(`${API_BASE}${path}`, {
         method: options.method ?? "GET",
         headers,
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
@@ -109,7 +117,7 @@ export async function bootstrapSession(): Promise<boolean> {
 
 export async function logout(): Promise<void> {
     try {
-        await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+        await fetch(`${API_BASE}/api/auth/logout`, { method: "POST", credentials: "include" });
     } finally {
         useAuthStore.getState().clear();
     }

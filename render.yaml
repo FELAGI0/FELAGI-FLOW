@@ -1,0 +1,70 @@
+# Render Blueprint — деплой Felagi Flow на managed-платформы.
+#
+# Render не читает docker-compose.yml (он для локальной разработки), поэтому
+# три процесса бэкенда описаны здесь тремя сервисами: web (api) + два
+# background worker'а (worker, scheduler). Все три собираются из одного
+# backend/Dockerfile и получают одну и ту же группу переменных окружения.
+#
+# Детали и порядок шагов: docs/deploy.md.
+# Секреты (sync: false) вводятся в Dashboard при создании Blueprint, в git их нет.
+
+services:
+  - type: web
+    name: felagi-flow-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /healthz
+    envVars:
+      - fromGroup: felagi-flow-secrets
+    # dockerCommand НЕ задаём: используем CMD из Dockerfile, который уже
+    # слушает ${PORT:-8000} (см. backend/Dockerfile). Так мы не зависим от того,
+    # раскрывает ли Render переменные в dockerCommand, и не дублируем команду.
+
+  - type: worker
+    name: felagi-flow-worker
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - fromGroup: felagi-flow-secrets
+    # тот же образ, что у api, но без веб-сервера: claim-цикл очереди
+    dockerCommand: python -m app.worker
+
+  - type: worker
+    name: felagi-flow-scheduler
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - fromGroup: felagi-flow-secrets
+    # один инстанс: cron-тик под cluster-wide advisory-lock
+    dockerCommand: python -m app.scheduler
+
+envVarGroups:
+  - name: felagi-flow-secrets
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: FERNET_KEY
+        sync: false
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: http://185.221.214.224:4100/v1
+      - key: LLM_MODELS
+        value: '["gpt-5.6-luna"]'
+      - key: FRONTEND_URL
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+      # refresh-cookie ходит между vercel.app и onrender.com (cross-site) —
+      # SameSite=Lax браузер в таком запросе не отправит
+      - key: COOKIE_SAMESITE
+        value: none
+      - key: CORS_ORIGINS
+        sync: false
+      - key: LOG_LEVEL
+        value: INFO

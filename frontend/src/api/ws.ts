@@ -1,3 +1,4 @@
+import { API_BASE } from "@/api/client";
 import { useAuthStore } from "@/stores/authStore";
 import type { ServerMessage } from "@/types/ws";
 
@@ -62,9 +63,14 @@ export interface ExecutionLogsHandle {
 }
 
 function wsUrl(executionId: string, token: string): string {
-    const scheme = window.location.protocol === "https:" ? "wss" : "ws";
     const params = new URLSearchParams({ token });
-    return `${scheme}://${window.location.host}/ws/executions/${executionId}?${params}`;
+    // VITE_API_URL задан (прод): WS идёт на тот же хост, что и REST, а схема
+    // выводится из http(s) → ws(s). Без него — на origin текущей страницы.
+    const base = API_BASE || window.location.origin;
+    const url = new URL(`/ws/executions/${executionId}`, base);
+    url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+    url.search = params.toString();
+    return url.toString();
 }
 
 export function connectExecutionLogs(

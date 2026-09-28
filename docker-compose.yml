@@ -9,6 +9,9 @@ x-backend-env: &backend-env
   LLM_BASE_URL: ${LLM_BASE_URL:-http://185.221.214.224:4100/v1}
   FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
   COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
+  CORS_ORIGINS: ${CORS_ORIGINS:-[]}
+  DB_SSL_REQUIRE: ${DB_SSL_REQUIRE:-false}
   # тонкая настройка: необязательна, дефолты заданы в app/shared/config.py
   ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
   REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}

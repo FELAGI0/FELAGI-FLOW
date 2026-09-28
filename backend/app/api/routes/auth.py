@@ -48,7 +48,7 @@ def _set_refresh_cookie(response: Response, user_id: uuid.UUID) -> None:
         path=AUTH_PREFIX,
         httponly=True,
         secure=settings.cookie_secure,
-        samesite="lax",
+        samesite=settings.cookie_samesite,
     )
 
 

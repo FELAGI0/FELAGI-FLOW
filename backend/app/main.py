@@ -3,6 +3,7 @@ from collections.abc import AsyncIterator
 
 import structlog
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
     auth_router,
@@ -16,6 +17,7 @@ from app.api.routes import (
     ws_router,
 )
 from app.api.ws_manager import listen_manager
+from app.shared.config import settings
 from app.shared.logging import setup_logging
 
 setup_logging()
@@ -42,6 +44,21 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Felagi Flow", lifespan=lifespan)
+
+# CORS нужен только когда фронт и api на разных origin (Vercel → Render).
+# Локально оба отдаёт один Caddy, поэтому список пуст и middleware не мешает.
+# allow_credentials=True обязателен: refresh-cookie идёт с credentials:"include",
+# а браузер запрещает credentials при allow_origins=["*"] — только явные origin'ы.
+_cors_origins = settings.cors_origins_list
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
 app.include_router(auth_router)
 app.include_router(invitations_router)
 app.include_router(workspaces_router)

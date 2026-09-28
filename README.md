@@ -81,6 +81,23 @@ docker compose up -d --build
 Стек: `postgres`, `api`, `worker`, `scheduler`, `caddy`. Проверка готовности —
 `http://localhost/healthz`.
 
+## Деплой
+
+Прод-конфигурация — Render (backend) + Neon (Postgres) + Vercel (frontend).
+Бэкенд описан в [`render.yaml`](render.yaml) как три сервиса из одного образа
+`backend/Dockerfile` (web api + два background worker'а), секреты и порядок шагов
+— в [`docs/deploy.md`](docs/deploy.md):
+
+1. **Neon** — создайте проект, скопируйте строку подключения (`sslmode=require`
+   оставьте как есть — бэкенд сам приводит её к asyncpg, см. §1 в deploy.md).
+2. **Render** — New → Blueprint из репозитория; заполните секреты группы
+   `felagi-flow-secrets` (`DATABASE_URL`, `JWT_SECRET_KEY`, `FERNET_KEY`,
+   `LLM_API_KEY`, `FRONTEND_URL`, `CORS_ORIGINS`).
+3. **Vercel** — New Project, Root Directory `frontend`, переменная
+   `VITE_API_URL=https://<api-сервис>.onrender.com`.
+4. **UptimeRobot** — монитор на `https://<api-сервис>.onrender.com/healthz`
+   каждые 5 минут (free-инстансы Render засыпают без трафика).
+
 ## Разработка
 
 Требования, локальный запуск без Docker, миграции, структура проекта и
