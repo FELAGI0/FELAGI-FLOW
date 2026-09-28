@@ -1,7 +1,7 @@
 # Деплой
 
 Прод-конфигурация: **Render** (только api) → **Neon** (managed Postgres) →
-**Vercel** (frontend) → **UptimeRobot** (keep-alive). Worker и scheduler на Render
+**Vercel** (frontend) → **cron-job.org** (keep-alive). Worker и scheduler на Render
 не размещаются (background workers там платные) — они запускаются локально и
 подключаются к той же Neon БД (см. §6). Локальная разработка — docker-compose.
 
@@ -18,7 +18,7 @@
 
 ## 0. Предусловия
 
-- Аккаунты: Render, Neon, Vercel, UptimeRobot (free-тарифов достаточно).
+- Аккаунты: Render, Neon, Vercel, cron-job.org (free-тарифов достаточно).
 - Репозиторий на GitHub (Render и Vercel деплоят из него).
 - Сгенерированные секреты:
 
@@ -75,7 +75,7 @@
 
    > `plan: free` — бесплатный инстанс. Free-сервисы Render засыпают после ~15
    > минут простоя и «просыпаются» при следующем запросе; чтобы этого не было —
-   > UptimeRobot (§4).
+   > cron-job.org (§4).
    >
    > **У api `dockerCommand` намеренно не задан** — он стартует по `CMD` из
    > `backend/Dockerfile`, который слушает `${PORT:-8000}` (shell-форма CMD
@@ -138,14 +138,14 @@ Refresh-cookie ходит между `*.vercel.app` и `*.onrender.com` — эт
   а WebSocket — на тот же хост со схемой `wss://`
   (`frontend/src/api/ws.ts`).
 
-## 4. UptimeRobot (keep-alive)
+## 4. cron-job.org (keep-alive)
 
 Free-инстансы Render засыпают после ~15 минут без трафика. Чтобы api не «просыпался»
 на первом запросе:
 
-1. Добавьте HTTP(s)-монитор: `https://felagi-flow-api.onrender.com/healthz`,
-   интервал 5 минут.
-2. Тип — HTTP(s), ожидаемый ответ `200` и статус `ok` в теле.
+1. Создайте cronjob в [cron-job.org](https://cron-job.org/) на URL
+   `https://felagi-flow-api.onrender.com/healthz` с интервалом 5 минут.
+2. Метод — `GET`, ожидайте ответ `200` и статус `ok` в теле.
 
 Пингуйте **только api**. Worker и scheduler — не на Render, у них нет публичного
 URL (§6); их пробуждает не внешний пинг, а работа с БД.
@@ -238,8 +238,8 @@ Cron не срабатывает.
 
 Текущая схема — полностью на бесплатных тарифах:
 
-- **Render Free** — api (засыпает без трафика; будит UptimeRobot).
-- **Neon Free**, **Vercel Free**, **UptimeRobot Free**.
+- **Render Free** — api (засыпает без трафика; будит cron-job.org).
+- **Neon Free**, **Vercel Free**, **cron-job.org Free**.
 - **Worker + scheduler** — на локальном ПК (бесплатно, но только пока ПК включён).
 
 Если нужен режим 24/7, worker и scheduler должны работать постоянно. Два пути:
