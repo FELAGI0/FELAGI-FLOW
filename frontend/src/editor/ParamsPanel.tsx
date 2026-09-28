@@ -1,13 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
+import { Copy } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { listCredentials } from "@/api/credentials";
 import type { JsonSchemaProperty, NodeTypeSchema } from "@/api/nodeTypes";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getUpstreamNodes } from "@/editor/graph";
 import { useNodeTypes } from "@/editor/NodePalette";
+import { copyToClipboard, useExpressionInserter } from "@/editor/useExpressionInserter";
 import { useEditorStore } from "@/stores/editorStore";
 
 /** Опциональность: в JSON-Schema Pydantic приходит как anyOf: [T, {"type":"null"}]. */
@@ -91,9 +95,11 @@ interface FieldProps {
     required: boolean;
     value: unknown;
     onChange: (value: unknown) => void;
+    /** Уведомляет панель, что это поле в фокусе — для вставки expression кликом. */
+    onFocus?: (element: HTMLInputElement) => void;
 }
 
-function Field({ name, prop, required, value, onChange }: FieldProps) {
+function Field({ name, prop, required, value, onChange, onFocus }: FieldProps) {
     const base = baseProperty(prop);
     const label = prop.title ?? name;
     const fieldId = `param-${name}`;
@@ -153,6 +159,7 @@ function Field({ name, prop, required, value, onChange }: FieldProps) {
                 type={numeric ? "number" : "text"}
                 step={base.type === "number" ? "any" : undefined}
                 value={value === undefined || value === null ? "" : String(value)}
+                onFocus={onFocus ? (event) => onFocus(event.currentTarget) : undefined}
                 onChange={(event) => {
                     const raw = event.target.value;
                     if (numeric) {
@@ -292,6 +299,7 @@ function RetrySection({ params, onPatch }: RetrySectionProps) {
 export function ParamsPanel() {
     const selectedNodeId = useEditorStore((state) => state.selectedNodeId);
     const nodes = useEditorStore((state) => state.nodes);
+    const edges = useEditorStore((state) => state.edges);
     const updateNodeParams = useEditorStore((state) => state.updateNodeParams);
     const { data: nodeTypes } = useNodeTypes();
 
@@ -314,6 +322,31 @@ export function ParamsPanel() {
     );
 
     const [draft, setDraft] = useState<Record<string, unknown>>({});
+
+    /** Общая запись params: обновляет draft и узел в сторе. */
+    function patchParams(next: Record<string, unknown>) {
+        if (!node) return;
+        setDraft(next);
+        updateNodeParams(node.id, next);
+    }
+
+    // вставка expression кликом по «доступным данным»: в активное поле или clipboard
+    const { focusField, insert } = useExpressionInserter(draft, patchParams);
+
+    const upstreamNodes = useMemo(
+        () =>
+            node
+                ? getUpstreamNodes(node.id, {
+                      nodes: nodes.map((candidate) => ({
+                          id: candidate.id,
+                          type: candidate.data.type,
+                          label: candidate.data.label,
+                      })),
+                      edges: edges.map((edge) => ({ source: edge.source, target: edge.target })),
+                  })
+                : [],
+        [node, nodes, edges],
+    );
 
     // при смене узла подтягиваем его параметры и дефолты схемы
     useEffect(() => {
@@ -354,6 +387,54 @@ export function ParamsPanel() {
                 <span className="text-xs text-muted-foreground">{node.data.type}</span>
             </div>
 
+            <div className="mb-4 flex items-center gap-1">
+                <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                    id: <code data-testid="node-id">{node.id}</code>
+                </span>
+                <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6"
+                    title="Скопировать id"
+                    aria-label="Скопировать id"
+                    data-testid="copy-node-id"
+                    onClick={() => copyToClipboard(node.id)}
+                >
+                    <Copy className="h-3.5 w-3.5" />
+                </Button>
+            </div>
+
+            {upstreamNodes.length > 0 && (
+                <details className="mb-4" data-testid="upstream-details">
+                    <summary className="cursor-pointer text-xs font-medium">
+                        Доступные данные из предыдущих узлов
+                    </summary>
+                    <ul className="mt-2 flex flex-col gap-1">
+                        {upstreamNodes.map((upstream) => {
+                            const expression = `{{ nodes.${upstream.id}.output }}`;
+                            return (
+                                <li key={upstream.id}>
+                                    <button
+                                        type="button"
+                                        className="w-full rounded px-1 py-0.5 text-left hover:bg-accent"
+                                        title="Вставить в поле параметра"
+                                        data-testid={`insert-${upstream.id}`}
+                                        onClick={() => insert(expression)}
+                                    >
+                                        <code className="block truncate text-xs text-primary">
+                                            {expression}
+                                        </code>
+                                        <span className="text-xs text-muted-foreground">
+                                            {upstream.label} ({upstream.type})
+                                        </span>
+                                    </button>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </details>
+            )}
+
             {Object.keys(properties).length === 0 ? (
                 <p className="text-sm text-muted-foreground">У этого узла нет параметров.</p>
             ) : (
@@ -364,11 +445,7 @@ export function ParamsPanel() {
                                 key={name}
                                 value={draft[name]}
                                 required={required.has(name)}
-                                onChange={(value) => {
-                                    const next = { ...draft, [name]: value };
-                                    setDraft(next);
-                                    updateNodeParams(node.id, next);
-                                }}
+                                onChange={(value) => patchParams({ ...draft, [name]: value })}
                             />
                         ) : (
                             <Field
@@ -377,11 +454,8 @@ export function ParamsPanel() {
                                 prop={prop}
                                 required={required.has(name)}
                                 value={draft[name]}
-                                onChange={(value) => {
-                                    const next = { ...draft, [name]: value };
-                                    setDraft(next);
-                                    updateNodeParams(node.id, next);
-                                }}
+                                onFocus={focusField(name)}
+                                onChange={(value) => patchParams({ ...draft, [name]: value })}
                             />
                         ),
                     )}
@@ -390,11 +464,7 @@ export function ParamsPanel() {
 
             <RetrySection
                 params={draft}
-                onPatch={(patch) => {
-                    const next = { ...draft, ...patch };
-                    setDraft(next);
-                    updateNodeParams(node.id, next);
-                }}
+                onPatch={(patch) => patchParams({ ...draft, ...patch })}
             />
         </aside>
     );
