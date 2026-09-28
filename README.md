@@ -83,10 +83,10 @@ docker compose up -d --build
 
 ## Деплой
 
-Прод-конфигурация — Render (backend) + Neon (Postgres) + Vercel (frontend).
-Бэкенд описан в [`render.yaml`](render.yaml) как три сервиса из одного образа
-`backend/Dockerfile` (web api + два background worker'а), секреты и порядок шагов
-— в [`docs/deploy.md`](docs/deploy.md):
+Прод-конфигурация — Render (только api) + Neon (Postgres) + Vercel (frontend).
+Бэкенд описан в [`render.yaml`](render.yaml) как один web-сервис из образа
+`backend/Dockerfile`; worker и scheduler запускаются **локально** и подключаются к
+той же Neon БД. Секреты и порядок шагов — в [`docs/deploy.md`](docs/deploy.md):
 
 1. **Neon** — создайте проект, скопируйте строку подключения (`sslmode=require`
    оставьте как есть — бэкенд сам приводит её к asyncpg, см. §1 в deploy.md).
@@ -97,6 +97,16 @@ docker compose up -d --build
    `VITE_API_URL=https://<api-сервис>.onrender.com`.
 4. **UptimeRobot** — монитор на `https://<api-сервис>.onrender.com/healthz`
    каждые 5 минут (free-инстансы Render засыпают без трафика).
+5. **Worker и Scheduler** — локально, к той же Neon БД:
+
+   ```bash
+   cp .env.prod.example .env   # указать DATABASE_URL от Neon и те же секреты
+   docker compose up -d worker scheduler
+   ```
+
+   Ручной запуск создаёт execution, но выполняет его только запущенный worker;
+   cron-расписания обрабатывает scheduler. Подробности и ограничения — §6 в
+   [deploy.md](docs/deploy.md).
 
 ## Разработка
 

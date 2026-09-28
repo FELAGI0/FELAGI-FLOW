@@ -1,11 +1,10 @@
 # Render Blueprint — деплой Felagi Flow на managed-платформы.
 #
-# Render не читает docker-compose.yml (он для локальной разработки), поэтому
-# три процесса бэкенда описаны здесь тремя сервисами: web (api) + два
-# background worker'а (worker, scheduler). Все три собираются из одного
-# backend/Dockerfile и получают одну и ту же группу переменных окружения.
+# Render не читает docker-compose.yml (он для локальной разработки). Здесь описан
+# только web-сервис api: background workers (worker, scheduler) на Render требуют
+# платный план, поэтому они запускаются локально и подключаются к той же Neon БД,
+# что и api. Подробности: docs/deploy.md.
 #
-# Детали и порядок шагов: docs/deploy.md.
 # Секреты (sync: false) вводятся в Dashboard при создании Blueprint, в git их нет.
 
 services:
@@ -14,32 +13,13 @@ services:
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
+    plan: free
     healthCheckPath: /healthz
     envVars:
       - fromGroup: felagi-flow-secrets
     # dockerCommand НЕ задаём: используем CMD из Dockerfile, который уже
     # слушает ${PORT:-8000} (см. backend/Dockerfile). Так мы не зависим от того,
     # раскрывает ли Render переменные в dockerCommand, и не дублируем команду.
-
-  - type: worker
-    name: felagi-flow-worker
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    envVars:
-      - fromGroup: felagi-flow-secrets
-    # тот же образ, что у api, но без веб-сервера: claim-цикл очереди
-    dockerCommand: python -m app.worker
-
-  - type: worker
-    name: felagi-flow-scheduler
-    runtime: docker
-    dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
-    envVars:
-      - fromGroup: felagi-flow-secrets
-    # один инстанс: cron-тик под cluster-wide advisory-lock
-    dockerCommand: python -m app.scheduler
 
 envVarGroups:
   - name: felagi-flow-secrets

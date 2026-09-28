@@ -1,15 +1,20 @@
 # Деплой
 
-Прод-конфигурация: **Render** (backend: api + worker + scheduler) → **Neon**
-(managed Postgres) → **Vercel** (frontend) → **UptimeRobot** (keep-alive).
-Локальная разработка остаётся на docker-compose — он для деплоя не используется.
+Прод-конфигурация: **Render** (только api) → **Neon** (managed Postgres) →
+**Vercel** (frontend) → **UptimeRobot** (keep-alive). Worker и scheduler на Render
+не размещаются (background workers там платные) — они запускаются локально и
+подключаются к той же Neon БД (см. §6). Локальная разработка — docker-compose.
 
 ```
-браузер ─► Vercel (SPA) ──fetch/WS──► Render: felagi-flow-api ─┐
-                                           ▲                    │
-                     Render: worker ×1 ────┤  LISTEN/NOTIFY     ├──► Neon (Postgres)
-                     Render: scheduler ×1 ─┘                    │
+браузер ─► Vercel (SPA) ──fetch/WS──► Render: felagi-flow-api ──┐
+                                                                 ├──► Neon (Postgres)
+        локальный ПК: worker ×1 ──── LISTEN/NOTIFY/очередь ──────┘
+        локальный ПК: scheduler ×1 ── cron-тик ──────────────────┘
 ```
+
+> Программа-минимум для проверки: можно поднять **только api** на Render и
+> запускать вручную — но запуски будут висеть в `queued`, пока локально не
+> поднят worker (§6).
 
 ## 0. Предусловия
 
@@ -54,33 +59,31 @@
    alembic upgrade head
    ```
 
-   В Blueprint миграции намеренно не автоматизированы — запускать их из
-   `startCommand` рискованно (несколько сервисов стартуют параллельно и могли бы
-   гнать `upgrade` одновременно). Для автоматизации используйте
+   В Blueprint миграции намеренно не автоматизированы — их прогоняем вручную
+   один раз перед стартом. Для автоматизации на будущих планах подойдёт
    `preDeployCommand` (Render) или отдельный one-off job.
 
 ## 2. Render (Blueprint)
 
 1. В Dashboard: **New → Blueprint**, подключите репозиторий. Render найдёт
    `render.yaml` в корне.
-2. Blueprint создаст три сервиса из одного образа `backend/Dockerfile`:
+2. Blueprint создаст **один** сервис из образа `backend/Dockerfile`:
 
    | Сервис | Тип | Команда |
    |---|---|---|
    | `felagi-flow-api` | web | CMD из Dockerfile: `uvicorn … --port ${PORT:-8000}` |
-   | `felagi-flow-worker` | worker | `python -m app.worker` |
-   | `felagi-flow-scheduler` | worker | `python -m app.scheduler` |
 
-   > Для сервисов с `runtime: docker` команда задаётся полем `dockerCommand`
-   > (в Dashboard — «Docker Command»). Поле `startCommand` относится к нативным
-   > рантаймам и для docker игнорируется.
+   > `plan: free` — бесплатный инстанс. Free-сервисы Render засыпают после ~15
+   > минут простоя и «просыпаются» при следующем запросе; чтобы этого не было —
+   > UptimeRobot (§4).
    >
    > **У api `dockerCommand` намеренно не задан** — он стартует по `CMD` из
    > `backend/Dockerfile`, который слушает `${PORT:-8000}` (shell-форма CMD
-   > раскрывает переменную стандартным механизмом Docker). Так мы не зависим от
-   > того, подставляет ли Render `$PORT` внутри `dockerCommand`, и не дублируем
-   > команду. Render задаёт `PORT` (по умолчанию 10000) — api слушает его.
-   > У worker/scheduler `dockerCommand` указан: их команды не требуют переменных.
+   > раскрывает переменную стандартным механизмом Docker). Render задаёт `PORT`
+   > (по умолчанию 10000) — api слушает его.
+   >
+   > Worker и scheduler здесь **отсутствуют**: на Render background workers
+   > требуют платный план. Они запускаются локально — см. §6.
 
 3. При создании Render спросит значения для переменных с `sync: false`
    (группа `felagi-flow-secrets`). Заполните:
@@ -144,9 +147,8 @@ Free-инстансы Render засыпают после ~15 минут без �
    интервал 5 минут.
 2. Тип — HTTP(s), ожидаемый ответ `200` и статус `ok` в теле.
 
-Пингуйте **только api**. Worker и scheduler — background workers, у них нет
-публичного URL; их должен будить трафик в БД (worker опрашивает очередь, scheduler
-тикает по расписанию), а не внешний пинг.
+Пингуйте **только api**. Worker и scheduler — не на Render, у них нет публичного
+URL (§6); их пробуждает не внешний пинг, а работа с БД.
 
 ## 5. Проверка после деплоя
 
@@ -167,15 +169,89 @@ curl -fsS https://felagi-flow-api.onrender.com/healthz
 | CORS-ошибка в браузере | `CORS_ORIGINS` = точный origin Vercel (со схемой, без слэша) |
 | Не логинится / «пропадает» сессия | `COOKIE_SAMESITE=none` **и** `COOKIE_SECURE=true`, оба на api |
 | Live-логи не идут, обычные запросы ок | WS на тот же хост, что REST; проверьте `wss://` и `CORS_ORIGINS` |
-| Запуски висят в `queued` | worker запущен и видит БД; scheduler — для cron-триггеров |
+| Запуски висят в `queued` | worker не запущен локально (§6) или не видит Neon |
+
+## 6. Worker и Scheduler — локально
+
+API работает на Render Free. Worker и Scheduler запускаются на локальном ПК и
+подключаются к **той же Neon БД**, что и API.
+
+### Зачем
+
+- **Worker** выполняет задачи из очереди (`executions`).
+- **Scheduler** создаёт `executions` по cron-расписанию.
+
+Без них: ручной запуск создаёт execution в `queued`, но никто его не выполняет.
+Cron не срабатывает.
+
+### Как запустить
+
+1. Скопировать пример конфигурации в рабочий `.env`:
+
+   ```bash
+   cp .env.prod.example .env
+   ```
+
+2. Указать `DATABASE_URL` от Neon — **тот же**, что задан на Render (§2.3), и те
+   же секреты (`JWT_SECRET_KEY`, `FERNET_KEY`, `LLM_API_KEY`, `LLM_*`). Строку
+   Neon можно вставлять как есть, с `sslmode=require` — бэкенд нормализует её сам
+   (§1.3).
+
+3. Поднять worker и scheduler:
+
+   ```bash
+   docker compose up -d worker scheduler
+   ```
+
+   `postgres` не поднимется: у сервисов `worker` и `scheduler` нет `depends_on`,
+   и compose запускает только запрошенные сервисы. `api` и `caddy` тоже не
+   стартуют — они не нужны и работают на Render. **Важно:** подстановка
+   переменных в `docker-compose.yml` идёт по всему файлу, поэтому `POSTGRES_*` и
+   `DATABASE_URL` должны быть заданы (в `.env.prod.example` они уже есть) — иначе
+   `docker compose` завершится ошибкой ещё до запуска.
+
+4. Проверить, что воркер стартовал:
+
+   ```bash
+   docker compose logs worker
+   # → {"event": "worker.started", "worker_id": "worker-…", ...}
+   ```
+
+   С этого момента запуски, созданные на Render-инстансе api, будут
+   выполняться локальным worker'ом (оба видят одну Neon-очередь через
+   `FOR UPDATE SKIP LOCKED`).
+
+### Ограничения
+
+- Worker работает только пока ПК включён. Пока он выключен, запуски копятся в
+  `queued` и выполняются после запуска (`reclaim` вернёт и «зависшие»).
+- Для 24/7 нужен VPS или платные background workers на Render (см. §Стоимость).
+- Останавливать: `docker compose stop worker scheduler` (или `down`, но `down -v`
+  удалит локальный том `pgdata`).
 
 ## Обновление секретов
 
 `sync: false` Render подставляет **только при первичном создании** Blueprint.
 Позже менять значения — вручную: Dashboard → сервис/группа → Environment.
 
-## Стоимость
+## Стоимость и альтернативы для 24/7
 
-Минимум: Render free (api + 2 worker как free background workers — 2 из них
-могут требовать платный минимальный план при нескольких worker'ах), Neon free,
-Vercel free, UptimeRobot free. Детали планов — в консолях провайдеров.
+Текущая схема — полностью на бесплатных тарифах:
+
+- **Render Free** — api (засыпает без трафика; будит UptimeRobot).
+- **Neon Free**, **Vercel Free**, **UptimeRobot Free**.
+- **Worker + scheduler** — на локальном ПК (бесплатно, но только пока ПК включён).
+
+Если нужен режим 24/7, worker и scheduler должны работать постоянно. Два пути:
+
+1. **Render Background Workers** — добавить в `render.yaml` два сервиса `type:
+   worker` (команды `python -m app.worker` и `python -m app.scheduler`) — но они
+   платные (от ~$7/мес за каждый). Тогда `dockerCommand`-поле обязательно; api
+   остаётся как есть.
+2. **VPS** — поставить docker-compose (или только `python -m app.worker`/
+   `python -m app.scheduler`) на недорогой VPS и направить `DATABASE_URL` на ту
+   же Neon-БД. Для этого можно переиспользовать `.env.prod.example` и поднять
+   там те же сервисы: `docker compose up -d worker scheduler`.
+
+В обоих случаях БД одна (Neon) — api на Render, worker/scheduler где угодно,
+связь через общую очередь в Postgres.
