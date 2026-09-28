@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-dom";
 
+import { Layout } from "@/components/Layout";
 import { PrivateRoute } from "@/components/PrivateRoute";
 import { ToastProvider } from "@/components/ui/toast";
 import { EditorPage } from "@/editor/EditorPage";
@@ -11,63 +12,70 @@ import { LoginPage } from "@/pages/LoginPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { WorkflowListPage } from "@/pages/WorkflowListPage";
 import { WorkspaceListPage } from "@/pages/WorkspaceListPage";
+import { useTheme } from "@/hooks/useTheme";
 
 const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
 
 export function App() {
+    // применение темы к documentElement — один раз на всё приложение (UI.1)
+    useTheme();
+
     return (
         <QueryClientProvider client={queryClient}>
             <ToastProvider>
                 <Router>
                     <Routes>
                         <Route path="/login" element={<LoginPage />} />
-                        <Route
-                            path="/workspaces"
-                            element={
-                                <PrivateRoute>
-                                    <WorkspaceListPage />
-                                </PrivateRoute>
-                            }
-                        />
-                        <Route
-                            path="/workspaces/:wsId/workflows"
-                            element={
-                                <PrivateRoute>
-                                    <WorkflowListPage />
-                                </PrivateRoute>
-                            }
-                        />
-                        <Route
-                            path="/workspaces/:wsId/credentials"
-                            element={
-                                <PrivateRoute>
-                                    <CredentialsPage />
-                                </PrivateRoute>
-                            }
-                        />
+                        <Route element={<Layout />}>
+                            <Route
+                                path="/workspaces"
+                                element={
+                                    <PrivateRoute>
+                                        <WorkspaceListPage />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/workspaces/:wsId/workflows"
+                                element={
+                                    <PrivateRoute>
+                                        <WorkflowListPage />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/workspaces/:wsId/credentials"
+                                element={
+                                    <PrivateRoute>
+                                        <CredentialsPage />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/workspaces/:wsId/executions"
+                                element={
+                                    <PrivateRoute>
+                                        <ExecutionsPage />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/workspaces/:wsId/executions/:executionId"
+                                element={
+                                    <PrivateRoute>
+                                        <ExecutionDetailPage />
+                                    </PrivateRoute>
+                                }
+                            />
+                        </Route>
+                        {/* Редактор — полноэкранный, со своим Toolbar */}
                         <Route
                             path="/workspaces/:wsId/workflows/:wfId/edit"
                             element={
                                 <PrivateRoute>
                                     <EditorPage />
-                                </PrivateRoute>
-                            }
-                        />
-                        <Route
-                            path="/workspaces/:wsId/executions"
-                            element={
-                                <PrivateRoute>
-                                    <ExecutionsPage />
-                                </PrivateRoute>
-                            }
-                        />
-                        <Route
-                            path="/workspaces/:wsId/executions/:executionId"
-                            element={
-                                <PrivateRoute>
-                                    <ExecutionDetailPage />
                                 </PrivateRoute>
                             }
                         />

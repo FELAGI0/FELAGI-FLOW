@@ -19,7 +19,12 @@ export default defineConfig({
     projects: [
         {
             name: "chromium",
-            use: { ...devices["Desktop Chrome"] },
+            use: {
+                ...devices["Desktop Chrome"],
+                // 1600x900: ширина из инструкции по скриншотам (UI.2),
+                // высота — чтобы влезали шапка и лента шагов
+                viewport: { width: 1600, height: 900 },
+            },
         },
     ],
 });

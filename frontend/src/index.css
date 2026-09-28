@@ -19,7 +19,37 @@
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
+    /* затемнение под модалками держим тёмным в обеих темах */
+    --overlay: oklch(0 0 0 / 0.5);
     --radius: 0.625rem;
+}
+
+/*
+ * Тёмная тема: нейтральная палитра (zinc), как в shadcn/ui dark.
+ * Класс 'dark' вешает на <html> хук useTheme. @theme inline ниже даёт
+ * утилитам ссылаться на переменные напрямую, поэтому переопределение здесь
+ * подхватывается всем деревом.
+ */
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.985 0 0);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --overlay: oklch(0 0 0 / 0.7);
+    color-scheme: dark;
 }
 
 @theme inline {
@@ -40,6 +70,7 @@
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
+    --color-overlay: var(--overlay);
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);

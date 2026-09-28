@@ -19,7 +19,7 @@ const badgeVariants = cva(
                 // красный — ошибка
                 red: "border-red-300 bg-red-50 text-red-900",
                 // тёмно-красный — dead (исчерпаны попытки)
-                darkred: "border-red-800 bg-red-800 text-white",
+                darkred: "border-red-800 bg-red-800 text-red-50",
                 // оранжевый — отменено
                 orange: "border-orange-300 bg-orange-50 text-orange-900",
                 // янтарный — предупреждение/пауза

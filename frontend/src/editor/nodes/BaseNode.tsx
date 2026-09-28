@@ -47,7 +47,7 @@ export function BaseNode({ id, data, selected }: NodeProps<EditorNode>) {
         <div
             className={cn(
                 "min-w-[160px] rounded-md border-2 px-3 py-2 shadow-sm",
-                CATEGORY_COLORS[category] ?? "bg-white border-slate-300",
+                CATEGORY_COLORS[category] ?? "bg-card border-border",
                 selected && "ring-2 ring-ring",
             )}
             data-testid={`node-${id}`}
