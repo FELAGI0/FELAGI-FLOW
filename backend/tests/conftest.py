@@ -4,6 +4,9 @@ from typing import Any
 
 # jwt_secret_key обязателен и без дефолта — задать до любого импорта app.*
 os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-not-for-production")
+# Fernet-ключ для credentials: детерминированный, только для тестов (шифрование
+# секретов работает и на нём; в проде — свой ключ из окружения)
+os.environ.setdefault("FERNET_KEY", "HUVGbfErpGskT-QOr26jULL4xyzjAYDbHLtRGGsc2ss=")
 
 import httpx
 import pytest

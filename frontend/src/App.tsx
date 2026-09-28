@@ -4,6 +4,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes } from "react-router-d
 import { PrivateRoute } from "@/components/PrivateRoute";
 import { ToastProvider } from "@/components/ui/toast";
 import { EditorPage } from "@/editor/EditorPage";
+import { CredentialsPage } from "@/pages/CredentialsPage";
 import { ExecutionDetailPage } from "@/pages/ExecutionDetailPage";
 import { ExecutionsPage } from "@/pages/ExecutionsPage";
 import { LoginPage } from "@/pages/LoginPage";
@@ -35,6 +36,14 @@ export function App() {
                             element={
                                 <PrivateRoute>
                                     <WorkflowListPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/workspaces/:wsId/credentials"
+                            element={
+                                <PrivateRoute>
+                                    <CredentialsPage />
                                 </PrivateRoute>
                             }
                         />

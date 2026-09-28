@@ -15,6 +15,7 @@ from app.engine.nodes.debug import handle_debug
 from app.engine.nodes.http import handle_http
 from app.engine.nodes.llm import handle_llm
 from app.engine.nodes.logic_if import handle_logic_if
+from app.engine.nodes.telegram import handle_telegram
 from app.engine.nodes.transform_set import handle_transform_set
 from app.engine.nodes.trigger_cron import handle_trigger_cron
 from app.engine.nodes.trigger_manual import handle_trigger_manual
@@ -31,6 +32,7 @@ HANDLERS: dict[str, NodeHandler] = {
     "logic_if": handle_logic_if,
     "action_http": handle_http,
     "action_llm": handle_llm,
+    "action_telegram": handle_telegram,
 }
 
 

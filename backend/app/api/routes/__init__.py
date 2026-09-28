@@ -1,4 +1,5 @@
 from app.api.routes.auth import router as auth_router
+from app.api.routes.credentials import router as credentials_router
 from app.api.routes.executions import router as executions_router
 from app.api.routes.hooks import router as hooks_router
 from app.api.routes.invitations import router as invitations_router
@@ -10,6 +11,7 @@ from app.api.routes.ws import router as ws_router
 
 __all__ = [
     "auth_router",
+    "credentials_router",
     "executions_router",
     "hooks_router",
     "invitations_router",

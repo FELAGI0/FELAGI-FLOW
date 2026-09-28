@@ -19,10 +19,15 @@ from app.engine.node_schemas import NODE_SCHEMAS, RetryConfig
 from app.engine.nodes import handle
 from app.engine.notify import notify_exec_log
 from app.engine.queue import heartbeat
-from app.shared.models import Execution, ExecutionStep, WorkflowVersion
+from app.shared.models import Execution, ExecutionStep, Workflow, WorkflowVersion
 from app.shared.schemas.workflow import Graph, Node
 
 IF_NODE_TYPE = "logic_if"
+
+# узлы с сайд-эффектами: перед выполнением проверяем idempotency_key, чтобы
+# повторный прогон того же запуска (reclaim + rerun) не отправил сообщение дважды
+# (DESIGN.md §execution_steps; ПРАВКА 12)
+SIDE_EFFECT_NODES = frozenset({"action_telegram"})
 
 # точка подмены для тестов: patching asyncio.sleep задел бы весь процесс,
 # включая пул соединений SQLAlchemy
@@ -143,6 +148,7 @@ async def _record_step(
     warnings: list[str] | None = None,
     duration_ms: int | None = None,
     attempt: int = 1,
+    idempotency_key: str | None = None,
 ) -> None:
     """Записывает шаг и СРАЗУ коммитит его (5.B-fix).
 
@@ -165,6 +171,7 @@ async def _record_step(
             error=error,
             warnings=warnings or [],
             duration_ms=duration_ms,
+            idempotency_key=idempotency_key,
         )
     )
     await session.flush()
@@ -174,6 +181,29 @@ async def _record_step(
 
 def load_graph(version: WorkflowVersion) -> Graph:
     return Graph.model_validate(version.graph)
+
+
+def _idempotency_key(execution_id: uuid.UUID, node_id: str, attempt: int) -> str:
+    """Ключ дедупликации сайд-эффекта (DESIGN.md §execution_steps)."""
+    return f"{execution_id}:{node_id}:{attempt}"
+
+
+async def _already_done(session: AsyncSession, key: str) -> dict[str, Any] | None:
+    """Успешный шаг с таким ключом уже есть? Тогда возвращаем его output.
+
+    Защита от at-least-once: после reclaim запуск мог перезапустить уже
+    выполненный узел с сайд-эффектом. Проверяем перед отправкой.
+    """
+    rows = await session.scalars(
+        select(ExecutionStep).where(
+            ExecutionStep.idempotency_key == key,
+            ExecutionStep.status == "succeeded",
+        )
+    )
+    existing = rows.first()
+    if existing is None:
+        return None
+    return existing.output or {}
 
 
 async def _run_node_with_retry(
@@ -196,10 +226,33 @@ async def _run_node_with_retry(
     """
     started = time.perf_counter()
     attempt = 0
+    side_effect = node.type in SIDE_EFFECT_NODES
     while True:
         attempt += 1
         error: str | None = None
         result: dict[str, Any] = {}
+
+        key = _idempotency_key(execution.id, node.id, attempt) if side_effect else None
+        # дедупликация сайд-эффекта: тот же узел уже успешно отработал в этом
+        # запуске (reclaim + rerun) — не шлём второй раз, отдаём прежний output
+        if key is not None:
+            previous = await _already_done(session, key)
+            if previous is not None:
+                await _record_step(
+                    session,
+                    execution.id,
+                    counter.take(),
+                    node,
+                    "skipped",
+                    resolved,
+                    previous,
+                    warnings=["duplicate side effect skipped (idempotency_key)"],
+                    duration_ms=0,
+                    attempt=attempt,
+                    idempotency_key=key,
+                )
+                return previous
+
         try:
             result = await handle(node.type, resolved, context)
         except Exception as exc:  # любая ошибка узла = ошибка попытки
@@ -221,6 +274,7 @@ async def _run_node_with_retry(
                 warnings=warnings,
                 duration_ms=int((time.perf_counter() - started) * 1000),
                 attempt=attempt,
+                idempotency_key=key,
             )
             return result
 
@@ -264,9 +318,20 @@ async def run_execution(
     # счётчик продолжает нумерацию: при rerun после reclaim старые шаги уже в БД
     counter = await _seed_counter(session, execution.id)
 
+    # workspace запуска — нужен узлам с credentials (action_telegram):
+    # credential ищется в пределах воркспейса workflow.
+    workspace_id = await session.scalar(
+        select(Workflow.workspace_id).where(Workflow.id == execution.workflow_id)
+    )
+
     context: dict[str, Any] = {
         "nodes": {},
         "trigger": {"payload": execution.trigger_payload or {}},
+        # узлам с credentials (action_telegram) нужны живая сессия и workspace,
+        # чтобы загрузить и расшифровать секрет. expressions-резолвер эти ключи
+        # игнорирует (читает только nodes/trigger), так что конфликта нет.
+        "session": session,
+        "workspace_id": workspace_id,
     }
 
     skipped: set[str] = set()

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     # определяется ещё и по домену — см. app/shared/db.py
     db_ssl_require: bool = False
     fernet_key: str = ""
+    # метка ключа Fernet, которым зашифрованы credentials (ПРАВКА 12).
+    # Сейчас всегда одно значение; поле заложено под будущую ротацию ключей.
+    fernet_key_id: str = "default"
     # JSON-массив разрешённых моделей LLM-узла; пусто = любые
     llm_models: str = "[]"
     log_level: str = "INFO"

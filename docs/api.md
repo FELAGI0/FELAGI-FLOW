@@ -108,6 +108,36 @@ curl http://localhost/api/workspaces -H "Authorization: Bearer $TOKEN"
 Ссылка-приглашение — `{FRONTEND_URL}/invite/{token}`, живёт
 `INVITATION_EXPIRE_DAYS` (7 дней).
 
+## Credentials
+
+Секреты воркспейса (сейчас Telegram bot-токен), зашифрованные Fernet. Наружу
+отдаются только метаданные — `payload`/`encrypted_payload` не возвращаются
+никогда. Удаление — soft-delete (`deleted_at`).
+
+| Метод | Путь | Роль |
+|---|---|---|
+| GET | `/api/workspaces/{ws_id}/credentials` | member+ |
+| POST | `/api/workspaces/{ws_id}/credentials` | owner/admin |
+| DELETE | `/api/workspaces/{ws_id}/credentials/{id}` | owner/admin |
+
+```bash
+curl -X POST http://localhost/api/workspaces/$WS_ID/credentials \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"service":"telegram","name":"My bot","payload":{"token":"123:ABC"}}'
+```
+
+`201 Created`:
+
+```json
+{"id":"…","service":"telegram","auth_type":"bot_token","name":"My bot","created_at":"…"}
+```
+
+Поле `payload` — свободный объект; для `service="telegram"` ожидается
+`{"token": "<bot token>"}`. Секрет шифруется ключом `FERNET_KEY` и кладётся в
+БД как `encrypted_payload` (bytea). `GET` возвращает `{"items": [...]}` без
+секрета. `DELETE` (204) помечает credential удалённым: узлы, ссылающиеся на
+него, при запуске получают ошибку шага «credential deleted».
+
 ## Node types
 
 ```bash

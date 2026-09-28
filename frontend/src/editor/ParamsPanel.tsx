@@ -1,11 +1,19 @@
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 
+import { listCredentials } from "@/api/credentials";
 import type { JsonSchemaProperty, NodeTypeSchema } from "@/api/nodeTypes";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNodeTypes } from "@/editor/NodePalette";
 import { useEditorStore } from "@/stores/editorStore";
+
+/** Опциональность: в JSON-Schema Pydantic приходит как anyOf: [T, {"type":"null"}]. */
+function isOptional(prop: JsonSchemaProperty): boolean {
+    return Boolean(prop.anyOf?.some((variant) => variant.type === "null"));
+}
 
 /** В JSON-Schema из Pydantic опциональный тип приходит как anyOf: [T, {"type":"null"}]. */
 function baseProperty(prop: JsonSchemaProperty): JsonSchemaProperty {
@@ -16,8 +24,65 @@ function baseProperty(prop: JsonSchemaProperty): JsonSchemaProperty {
     return prop;
 }
 
-function isOptional(prop: JsonSchemaProperty): boolean {
-    return Boolean(prop.anyOf?.some((variant) => variant.type === "null"));
+/**
+ * Выбор credential для узлов с секретами (action_telegram). Список — из
+ * GET /api/workspaces/{ws}/credentials; секрет наружу не отдаётся, только имя.
+ * Если credentials нет — ссылка «Добавить» на страницу управления.
+ */
+function CredentialField({
+    value,
+    required,
+    onChange,
+}: {
+    value: unknown;
+    required: boolean;
+    onChange: (value: unknown) => void;
+}) {
+    const { wsId = "" } = useParams();
+    const { data: credentials, isLoading } = useQuery({
+        queryKey: ["credentials", wsId],
+        queryFn: () => listCredentials(wsId),
+        enabled: Boolean(wsId),
+    });
+
+    const list = credentials ?? [];
+
+    return (
+        <div className="flex flex-col gap-1.5">
+            <Label htmlFor="param-credential_id">
+                Credential
+                {required && <span className="text-destructive"> *</span>}
+            </Label>
+            {list.length === 0 && !isLoading ? (
+                <p className="text-xs text-muted-foreground">
+                    Нет credentials.{" "}
+                    <Link
+                        to={`/workspaces/${wsId}/credentials`}
+                        className="text-primary hover:underline"
+                        data-testid="credentials-add-link"
+                    >
+                        Добавить
+                    </Link>
+                </p>
+            ) : (
+                <Select
+                    value={value === undefined || value === null ? "" : String(value)}
+                    onValueChange={(next) => onChange(next)}
+                >
+                    <SelectTrigger id="param-credential_id" data-testid="param-credential_id">
+                        <SelectValue placeholder={isLoading ? "Загрузка…" : "Выберите…"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {list.map((credential) => (
+                            <SelectItem key={credential.id} value={credential.id}>
+                                {credential.name} ({credential.service})
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            )}
+        </div>
+    );
 }
 
 interface FieldProps {
@@ -293,20 +358,33 @@ export function ParamsPanel() {
                 <p className="text-sm text-muted-foreground">У этого узла нет параметров.</p>
             ) : (
                 <div className="flex flex-col gap-4">
-                    {Object.entries(properties).map(([name, prop]) => (
-                        <Field
-                            key={name}
-                            name={name}
-                            prop={prop}
-                            required={required.has(name)}
-                            value={draft[name]}
-                            onChange={(value) => {
-                                const next = { ...draft, [name]: value };
-                                setDraft(next);
-                                updateNodeParams(node.id, next);
-                            }}
-                        />
-                    ))}
+                    {Object.entries(properties).map(([name, prop]) =>
+                        name === "credential_id" ? (
+                            <CredentialField
+                                key={name}
+                                value={draft[name]}
+                                required={required.has(name)}
+                                onChange={(value) => {
+                                    const next = { ...draft, [name]: value };
+                                    setDraft(next);
+                                    updateNodeParams(node.id, next);
+                                }}
+                            />
+                        ) : (
+                            <Field
+                                key={name}
+                                name={name}
+                                prop={prop}
+                                required={required.has(name)}
+                                value={draft[name]}
+                                onChange={(value) => {
+                                    const next = { ...draft, [name]: value };
+                                    setDraft(next);
+                                    updateNodeParams(node.id, next);
+                                }}
+                            />
+                        ),
+                    )}
                 </div>
             )}
 

@@ -95,6 +95,21 @@ class LlmParams(BaseNodeParams):
     temperature: float = Field(default=1.0, ge=0.0, le=2.0)
 
 
+class TelegramParams(BaseNodeParams):
+    """Telegram sendMessage (DESIGN.md, ПРАВКА 12): токен — в credential.
+
+    credential_id — строка-UUID: узел грузит credential из БД по id и
+    расшифровывает bot-токен. В панели параметров UI рендерит это поле
+    выпадающим списком (см. ParamsPanel.tsx).
+    """
+
+    credential_id: str
+    chat_id: str
+    text: str
+    parse_mode: Literal["", "Markdown", "HTML"] = ""
+    disable_notification: bool = False
+
+
 class CronParams(BaseNodeParams):
     """Cron-триггер: расписание запуска в указанной зоне.
 
@@ -128,4 +143,5 @@ NODE_SCHEMAS: dict[str, NodeSchema] = {
     "logic_if": NodeSchema("If", "logic", LogicIfParams, ["true", "false"]),
     "action_http": NodeSchema("HTTP Request", "action", HttpParams, ["default"]),
     "action_llm": NodeSchema("LLM", "action", LlmParams, ["default"]),
+    "action_telegram": NodeSchema("Telegram", "action", TelegramParams, ["default"]),
 }

@@ -4,6 +4,11 @@ from app.shared.schemas.auth import (
     RegisterRequest,
     TokenResponse,
 )
+from app.shared.schemas.credential import (
+    CredentialCreate,
+    CredentialListResponse,
+    CredentialResponse,
+)
 from app.shared.schemas.execution import (
     ExecutionDetailResponse,
     ExecutionListResponse,
@@ -35,6 +40,9 @@ from app.shared.schemas.workspace import (
 )
 
 __all__ = [
+    "CredentialCreate",
+    "CredentialListResponse",
+    "CredentialResponse",
     "Edge",
     "ExecutionDetailResponse",
     "ExecutionListResponse",

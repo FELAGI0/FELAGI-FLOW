@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
     auth_router,
+    credentials_router,
     executions_router,
     hooks_router,
     invitations_router,
@@ -62,6 +63,7 @@ if _cors_origins:
 app.include_router(auth_router)
 app.include_router(invitations_router)
 app.include_router(workspaces_router)
+app.include_router(credentials_router)
 app.include_router(node_types_router)
 app.include_router(workflows_router)
 app.include_router(executions_router)

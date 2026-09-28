@@ -162,7 +162,28 @@ API (LISTEN exec_log): payload → очередь каждого WS-соедин
 | **PostgreSQL 16** | да | Данные, очередь, LISTEN/NOTIFY. Без неё стек не стартует. |
 | **Caddy** | да (в compose) | Единая точка входа, TLS-терминация в проде, статика SPA. |
 | **LLM API (OpenAI-совместимый)** | нет | Только узел LLM. Без `LLM_API_KEY` узел возвращает ошибку шага `LLM_API_KEY is not configured`, остальное работает. Адрес задаётся `LLM_BASE_URL`. |
+| **Telegram Bot API** | нет | Только узел `action_telegram`. Bot-токен хранится как credential воркспейса (шифруется Fernet). Без него узел возвращает ошибку шага. |
 | **Внешние HTTP-эндпоинты** | нет | Только узел HTTP Request; вызываются самим пользователем. |
 
 Никаких других внешних сервисов нет: retry, очередь, уведомления и планировщик
 построены на самой БД.
+
+## Credentials
+
+Секреты воркспейса (сейчас только Telegram bot-токен) хранятся в таблице
+`credentials` и **шифруются Fernet** (`FERNET_KEY`) — в БД лежит только
+`encrypted_payload` (bytea), наружу через API секрет не отдаётся никогда.
+
+- **Изоляция:** credential привязан к `workspace_id`; узел ищет секрет только в
+  воркспейсе своего workflow.
+- **Soft-delete:** `DELETE` ставит `deleted_at`, строка остаётся (аудит,
+  восстановление). Запуск с удалённым credential даёт понятную ошибку шага
+  «credential deleted», а не 500 (ПРАВКА 12).
+- **Ротация ключа:** колонка `encryption_key_id` заложена под будущую ротацию;
+  сейчас в ней всегда одно значение (`FERNET_KEY_ID`, по умолчанию `default`).
+- **Идемпотентность сайд-эффектов:** узел `action_telegram` перед отправкой
+  проверяет `idempotency_key` (`<execution_id>:<node_id>:<attempt>`) в
+  `execution_steps` — защита от повторной отправки при at-least-once (reclaim +
+  rerun).
+
+Подробнее о таблице — `DESIGN.md` §«credentials».
