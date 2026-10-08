@@ -1,7 +1,7 @@
 [project]
 name = "felagi-flow-backend"
 version = "0.1.0"
-description = "Felagi Flow — visual automation platform backend"
+description = "Felagi Flow - visual automation platform backend"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "fastapi==0.141.1",
@@ -19,7 +19,7 @@ dependencies = [
     "argon2-cffi==25.1.0",
     "asyncpg==0.31.0",
     "croniter==6.2.4",
-    # httpx — runtime: HTTP-узел (app/engine/nodes/http.py) импортирует его в проде
+    # httpx - runtime: HTTP-узел (app/engine/nodes/http.py) импортирует его в проде
     "httpx==0.28.1",
     "stripe==15.6.1",
     "uvicorn[standard]==0.53.0",
@@ -44,14 +44,14 @@ packages = ["app"]
 [tool.ruff]
 target-version = "py313"
 line-length = 100
-# миграции генерирует alembic — линтить их вручную каждый раз смысла нет,
+# миграции генерирует alembic - линтить их вручную каждый раз смысла нет,
 # mypy их всё равно проверяет
 extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
-# RUF001/002/003 ругаются на кириллические «а/е/о/с/В» в строках, докстрингах и
-# комментариях — для русскоязычного кода это сплошной шум
+# RUF001/002/003 ругаются на кириллические "а/е/о/с/В" в строках, докстрингах и
+# комментариях - для русскоязычного кода это сплошной шум
 ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.mypy]
@@ -61,7 +61,7 @@ plugins = ["pydantic.mypy"]
 
 # croniter, dateutil и asyncpg не поставляют py.typed: без этих override'ов
 # mypy strict падает на import-untyped, а `# type: ignore` в проекте запрещён
-# (CLAUDE.md). Типы этих библиотек всё равно не проверяются — override честнее
+# (CLAUDE.md). Типы этих библиотек всё равно не проверяются - override честнее
 # точечного ignore
 [[tool.mypy.overrides]]
 module = ["croniter", "dateutil", "dateutil.*", "asyncpg", "asyncpg.*"]

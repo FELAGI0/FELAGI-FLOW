@@ -25,7 +25,7 @@ function MetaItem({ label, children }: { label: string; children: ReactNode }) {
 }
 
 function StepRow({ step, isNew }: { step: ExecutionStep; isNew: boolean }) {
-    // развёрнутость — локальное состояние: новые шаги не сворачивают уже открытые
+    // развёрнутость - локальное состояние: новые шаги не сворачивают уже открытые
     const [open, setOpen] = useState(false);
     return (
         <>
@@ -116,7 +116,7 @@ export function ExecutionDetailPage() {
             toast.show(err instanceof Error ? err.message : "Не удалось отменить", "error"),
     });
 
-    // отображаем «новизну» только что пришедших шагов (для анимации появления)
+    // отображаем "новизну" только что пришедших шагов (для анимации появления)
     const knownIdsRef = useRef<Set<string>>(new Set());
     const [newIds, setNewIds] = useState<Set<string>>(new Set());
     useEffect(() => {

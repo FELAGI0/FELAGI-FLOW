@@ -7,7 +7,7 @@ from pydantic import BaseModel, EmailStr
 
 class InvitationCreate(BaseModel):
     email: EmailStr
-    # owner нельзя пригласить — Literal отсекает это на 422
+    # owner нельзя пригласить - Literal отсекает это на 422
     role: Literal["admin", "member"] = "member"
 
 

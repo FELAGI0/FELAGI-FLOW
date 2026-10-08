@@ -31,7 +31,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Поднимает LISTEN для live-логов на время жизни процесса API.
 
     БД может быть недоступна на старте (тесты на SQLite, ранний старт в
-    compose) — тогда live-логи просто выключены, приложение не падает.
+    compose) - тогда live-логи просто выключены, приложение не падает.
     """
     try:
         await listen_manager.start()
@@ -46,10 +46,10 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Felagi Flow", lifespan=lifespan)
 
-# CORS нужен только когда фронт и api на разных origin (Vercel → Render).
+# CORS нужен только когда фронт и api на разных origin (Vercel -> Render).
 # Локально оба отдаёт один Caddy, поэтому список пуст и middleware не мешает.
 # allow_credentials=True обязателен: refresh-cookie идёт с credentials:"include",
-# а браузер запрещает credentials при allow_origins=["*"] — только явные origin'ы.
+# а браузер запрещает credentials при allow_origins=["*"] - только явные origin'ы.
 _cors_origins = settings.cors_origins_list
 if _cors_origins:
     app.add_middleware(
@@ -68,7 +68,7 @@ app.include_router(node_types_router)
 app.include_router(workflows_router)
 app.include_router(executions_router)
 app.include_router(schedules_router)
-# без префикса /api: путь /hooks/{token} — публичный приём вебхуков
+# без префикса /api: путь /hooks/{token} - публичный приём вебхуков
 app.include_router(hooks_router)
 # без префикса /api: путь /ws/... проксируется Caddy как WebSocket
 app.include_router(ws_router)

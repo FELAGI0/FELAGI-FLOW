@@ -4,17 +4,17 @@
 
 ## Что нужно
 
-1. editor-dark.png — редактор с графом
-   Cron → HTTP → LLM → Telegram, палитра слева, канвас в центре,
+1. editor-dark.png - редактор с графом
+   Cron -> HTTP -> LLM -> Telegram, палитра слева, канвас в центре,
    панель параметров справа
 
-2. execution-live-dark.png — execution-страница
+2. execution-live-dark.png - execution-страница
    4 шага succeeded + live-индикатор
 
-3. credentials-dark.png — страница credentials
+3. credentials-dark.png - страница credentials
    Список с "Мой бот (telegram)"
 
-4. node-panel-dark.png — панель параметров Telegram
+4. node-panel-dark.png - панель параметров Telegram
    С id узла + раскрытый "Доступные данные из предыдущих узлов"
 
 ## Как сделать

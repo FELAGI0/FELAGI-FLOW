@@ -37,7 +37,7 @@ services:
     # порт публикуется только на loopback: нужен для pytest с хоста
     # (TEST_DATABASE_URL) и для psql-отладки. Сервисы внутри сети ходят по
     # postgres:5432 через DATABASE_URL и от этой публикации не зависят.
-    # POSTGRES_PORT — если 5432 на хосте занят локальным Postgres.
+    # POSTGRES_PORT - если 5432 на хосте занят локальным Postgres.
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
@@ -69,7 +69,7 @@ services:
 
   worker:
     <<: *backend
-    # заглушка завершается сразу — держим контейнер живым до настоящего воркера (этап 3–4)
+    # заглушка завершается сразу - держим контейнер живым до настоящего воркера (этап 3-4)
     command: ["sh", "-c", "python -m app.worker && sleep infinity"]
 
   scheduler:

@@ -125,7 +125,7 @@ async def run_workflow(
             status_code=status.HTTP_409_CONFLICT, detail="Workflow is not published: publish first"
         )
 
-    # лимиты плана — заглушка до этапа 8 (биллинг)
+    # лимиты плана - заглушка до этапа 8 (биллинг)
     execution = await enqueue(
         session,
         workflow.id,
@@ -183,9 +183,9 @@ async def list_executions(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid cursor"
             )
         cursor_created, cursor_id = decoded
-        # keyset-пагинация: строго «старше» последней строки предыдущей страницы.
+        # keyset-пагинация: строго "старше" последней строки предыдущей страницы.
         # literal() нужен, чтобы значения курсора стали bind-параметрами
-        # (в tuple_ ожидаются SQL-выражения, а не «сырые» Python-значения)
+        # (в tuple_ ожидаются SQL-выражения, а не "сырые" Python-значения)
         stmt = stmt.where(
             tuple_(Execution.created_at, Execution.id)
             < tuple_(literal(cursor_created), literal(cursor_id))
@@ -214,7 +214,7 @@ async def cancel_execution(
 ) -> ExecutionResponse:
     execution = await _execution_for_member(session, execution_id, current_user.id)
 
-    # отмена — best effort: ставим флаг, runner проверяет его между узлами.
+    # отмена - best effort: ставим флаг, runner проверяет его между узлами.
     # Если узел уже в работе (HTTP-запрос и т.п.), он завершится.
     if execution.status not in ("queued", "running"):
         raise HTTPException(

@@ -32,7 +32,7 @@ class WorkflowCreate(BaseModel):
 
 class WorkflowUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1)
-    # 'active' недоступен: активация только через POST /publish, иначе Literal → 422
+    # 'active' недоступен: активация только через POST /publish, иначе Literal -> 422
     status: Literal["draft", "paused"] | None = None
 
 

@@ -70,7 +70,7 @@ async def test_owner_creates_invitation(
     assert body["email"] == "invitee@example.com"
     assert body["role"] == "member"
     assert body["invite_url"].startswith("http://localhost/invite/")
-    # в URL лежит token, а не id инвайта — проверяем, что хвост непустой
+    # в URL лежит token, а не id инвайта - проверяем, что хвост непустой
     assert len(body["invite_url"].rsplit("/", 1)[1]) >= 32
 
 

@@ -5,7 +5,7 @@ const baseURL = process.env.E2E_BASE_URL ?? "http://localhost";
 export default defineConfig({
     testDir: "./e2e",
     // стек поднимается в globalSetup (docker compose up -d --build + ожидание
-    // /healthz): webServer для этого не годится — он считает выход процесса ошибкой,
+    // /healthz): webServer для этого не годится - он считает выход процесса ошибкой,
     // а `compose up -d` отцепляется и выходит сразу
     globalSetup: "./e2e/global-setup.ts",
     fullyParallel: false,
@@ -22,7 +22,7 @@ export default defineConfig({
             use: {
                 ...devices["Desktop Chrome"],
                 // 1600x900: ширина из инструкции по скриншотам (UI.2),
-                // высота — чтобы влезали шапка и лента шагов
+                // высота - чтобы влезали шапка и лента шагов
                 viewport: { width: 1600, height: 900 },
             },
         },

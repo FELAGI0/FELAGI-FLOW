@@ -1,10 +1,10 @@
 /**
- * Типы запусков (executions) — зеркала backend-схем из
+ * Типы запусков (executions) - зеркала backend-схем из
  * `app/shared/schemas/execution.py`. Единый источник для REST-клиента и
  * WS-типов (live-логи 5.B импортируют `Execution`/`ExecutionStep` отсюда).
  */
 
-/** Статусы запуска. `queued`/`running` — активные; остальные терминальные. */
+/** Статусы запуска. `queued`/`running` - активные; остальные терминальные. */
 export type ExecutionStatus =
     | "queued"
     | "running"
@@ -31,12 +31,12 @@ export function isActiveStatus(status: string): boolean {
     return (ACTIVE_STATUSES as readonly string[]).includes(status);
 }
 
-/** Шаг выполнения — совпадает с backend ExecutionStepResponse. */
+/** Шаг выполнения - совпадает с backend ExecutionStepResponse. */
 export interface ExecutionStep {
     id: string;
     node_id: string;
     node_type: string;
-    /** номер попытки узла при per-node retry (4.C): 1, 2, 3… */
+    /** номер попытки узла при per-node retry (4.C): 1, 2, 3... */
     attempt: number;
     /** 'running' | 'succeeded' | 'failed' | 'skipped' */
     status: string;
@@ -47,7 +47,7 @@ export interface ExecutionStep {
     duration_ms: number | null;
 }
 
-/** Запуск — совпадает с backend ExecutionResponse. */
+/** Запуск - совпадает с backend ExecutionResponse. */
 export interface Execution {
     id: string;
     workflow_id: string;

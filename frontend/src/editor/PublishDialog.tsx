@@ -21,7 +21,7 @@ interface PublishDialogProps {
 }
 
 /** Достаёт список ошибок валидации из ответа бэкенда.
- * Форма — detail: {message, errors: string[]} (см. POST /publish в workflows.py). */
+ * Форма - detail: {message, errors: string[]} (см. POST /publish в workflows.py). */
 function validationErrors(error: unknown): string[] | null {
     if (!(error instanceof ApiError) || error.status !== 422) return null;
     const detail = (error.body as { detail?: { errors?: string[] } })?.detail;
@@ -86,7 +86,7 @@ export function PublishDialog({ wfId, open, onOpenChange }: PublishDialogProps) 
 
     const isDirty = useEditorStore((state) => state.isDirty);
 
-    // номер версии, которая уйдёт в публикацию — нужен для показа в диалоге
+    // номер версии, которая уйдёт в публикацию - нужен для показа в диалоге
     const versionsQuery = useQuery({
         queryKey: ["versions", wfId],
         queryFn: () => listVersions(wfId),

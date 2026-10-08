@@ -1,4 +1,4 @@
-# Render Blueprint — деплой Felagi Flow на managed-платформы.
+# Render Blueprint - деплой Felagi Flow на managed-платформы.
 #
 # Render не читает docker-compose.yml (он для локальной разработки). Здесь описан
 # только web-сервис api: background workers (worker, scheduler) на Render требуют
@@ -40,7 +40,7 @@ envVarGroups:
         sync: false
       - key: COOKIE_SECURE
         value: "true"
-      # refresh-cookie ходит между vercel.app и onrender.com (cross-site) —
+      # refresh-cookie ходит между vercel.app и onrender.com (cross-site) -
       # SameSite=Lax браузер в таком запросе не отправит
       - key: COOKIE_SAMESITE
         value: none

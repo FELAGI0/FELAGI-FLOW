@@ -6,20 +6,20 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.shared.config import settings
 
-# asyncpg не понимает эти query-параметры (sslmode — синтаксис libpq, а
+# asyncpg не понимает эти query-параметры (sslmode - синтаксис libpq, а
 # channel_binding ему вообще чужд) и падает с TypeError. Neon отдаёт строку
 # именно с ними, поэтому вырезаем и переносим требование TLS в connect_args.
 _UNSUPPORTED_QUERY = ("sslmode", "ssl", "channel_binding")
 
 
 def normalize_database_url(raw: str) -> tuple[str, dict[str, Any]]:
-    """URL драйвера → (URL, connect_args) с корректным TLS для asyncpg.
+    """URL драйвера -> (URL, connect_args) с корректным TLS для asyncpg.
 
     - приводит `postgresql://`/`postgres://` к `postgresql+asyncpg://` (у
       managed-провайдеров строка без драйвера);
     - вырезает libpq-параметры `sslmode`/`channel_binding`;
     - включает TLS, если он явно запрошен в URL (`sslmode`/`ssl`) либо задан
-      `DB_SSL_REQUIRE`, либо хост — Neon (`*.neon.tech`).
+      `DB_SSL_REQUIRE`, либо хост - Neon (`*.neon.tech`).
     """
     url = make_url(raw)
     if url.drivername in ("postgresql", "postgres"):

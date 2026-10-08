@@ -1,6 +1,6 @@
 """Spike 3.D: жизнеспособность очереди на Postgres.
 
-Только Postgres: SQLite не реализует FOR UPDATE SKIP LOCKED — тесты на нём
+Только Postgres: SQLite не реализует FOR UPDATE SKIP LOCKED - тесты на нём
 проходили бы, ничего не проверяя. Все тесты помечены @pytest.mark.postgres.
 """
 
@@ -49,7 +49,7 @@ async def _make_workflow(session: AsyncSession) -> tuple[uuid.UUID, uuid.UUID]:
 
 @pytest.fixture
 async def session_factory(session: AsyncSession) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
-    """Отдельный движок к той же БД — для тестов с двумя параллельными сессиями.
+    """Отдельный движок к той же БД - для тестов с двумя параллельными сессиями.
 
     Зависит от `session`, чтобы гарантировать созданную conftest'ом схему.
     """
@@ -143,7 +143,7 @@ async def test_two_parallel_claims_do_not_take_same_execution(
     try:
         # A берёт задачу и держит блокировку строки (транзакция не закоммичена)
         claimed_a = await claim_next(session_a, "worker-a")
-        # B в это же время пытается взять — заблокированную строку Postgres пропускает
+        # B в это же время пытается взять - заблокированную строку Postgres пропускает
         claimed_b = await claim_next(session_b, "worker-b")
 
         assert claimed_a is not None
@@ -167,7 +167,7 @@ async def test_two_parallel_claims_do_not_take_same_execution(
 async def test_parallel_claim_single_row_second_gets_none(
     session: AsyncSession, session_factory: async_sessionmaker[AsyncSession]
 ) -> None:
-    """Одна задача: второй воркер не ждёт и не берёт её — получает None."""
+    """Одна задача: второй воркер не ждёт и не берёт её - получает None."""
     wf_id, ver_id = await _make_workflow(session)
     await enqueue(session, wf_id, ver_id)
     await session.commit()
@@ -257,7 +257,7 @@ async def test_reclaim_returns_stale_to_queue_without_changing_attempts(
     assert refreshed.status == "queued"
     assert refreshed.locked_by is None
     assert refreshed.locked_at is None
-    assert refreshed.attempts == 1  # попытка не «сгорела» при reclaim
+    assert refreshed.attempts == 1  # попытка не "сгорела" при reclaim
 
 
 async def test_reclaim_leaves_fresh_locks_alone(session: AsyncSession) -> None:
@@ -351,7 +351,7 @@ async def test_worker_killed_during_execution(session: AsyncSession) -> None:
     await enqueue(session, wf_id, ver_id)
     await session.commit()
 
-    # 1-2. воркер A берёт задачу и «умирает»: ни complete, ни heartbeat
+    # 1-2. воркер A берёт задачу и "умирает": ни complete, ни heartbeat
     claimed_a = await claim_next(session, "worker-a")
     assert claimed_a is not None
     assert claimed_a.attempts == 1
@@ -378,7 +378,7 @@ async def test_worker_killed_during_execution(session: AsyncSession) -> None:
     assert claimed_b is not None
     assert claimed_b.id == claimed_a.id
 
-    # 6. attempts=2 — попытка A не потерялась и не удвоилась
+    # 6. attempts=2 - попытка A не потерялась и не удвоилась
     assert claimed_b.attempts == 2
     await session.commit()
 

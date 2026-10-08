@@ -1,11 +1,11 @@
 """Live-логи execution через WebSocket (этап 5.B, DESIGN.md §3).
 
-Auth — JWT в query-параметре: браузерный WebSocket не умеет кастомные
+Auth - JWT в query-параметре: браузерный WebSocket не умеет кастомные
 заголовки, поэтому токен приходит как `?token=<access_token>`.
 
 Каждое соединение подписано на ОДИН execution (не на канал workspace): так
 живёт ровно столько, сколько длится интерес к запуску. NOTIFY несёт только id
-запуска, сами шаги клиент дочитывает из БД — источник истины всегда БД.
+запуска, сами шаги клиент дочитывает из БД - источник истины всегда БД.
 """
 
 import asyncio
@@ -28,7 +28,7 @@ router = APIRouter(tags=["ws"])
 
 logger = structlog.get_logger()
 
-# прикладные коды закрытия (RFC 6455: 4000–4999 зарезервированы под приложение)
+# прикладные коды закрытия (RFC 6455: 4000-4999 зарезервированы под приложение)
 CLOSE_UNAUTHORIZED = 4401
 CLOSE_NOT_FOUND = 4404
 CLOSE_TOO_MANY = 4429
@@ -38,7 +38,7 @@ TERMINAL_STATUSES = frozenset({"succeeded", "failed", "dead", "canceled"})
 
 
 def _user_id_from_token(token: str | None) -> uuid.UUID | None:
-    """Валидирует access-токен из query. None — если токена нет или он негоден."""
+    """Валидирует access-токен из query. None - если токена нет или он негоден."""
     if not token:
         return None
     try:
@@ -56,7 +56,7 @@ def _user_id_from_token(token: str | None) -> uuid.UUID | None:
 async def _authorize(
     session: AsyncSession, execution_id: uuid.UUID, user_id: uuid.UUID
 ) -> Execution | None:
-    """Execution, если user — member workspace'а его workflow. Иначе None."""
+    """Execution, если user - member workspace'а его workflow. Иначе None."""
     execution = await session.get(Execution, execution_id)
     if execution is None:
         return None
@@ -75,14 +75,14 @@ async def _all_steps(
     """Шаги запуска уже в виде payload'ов (dict).
 
     Сериализуем сразу, до возможного rollback: после rollback ORM-объекты
-    «протухают», и обращение к их атрибутам синхронно дёрнуло бы refresh →
-    MissingGreenlet. Отдаём словари — их можно слать в WS когда угодно.
+    "протухают", и обращение к их атрибутам синхронно дёрнуло бы refresh ->
+    MissingGreenlet. Отдаём словари - их можно слать в WS когда угодно.
     """
     rows = await session.scalars(
         select(ExecutionStep)
         .where(ExecutionStep.execution_id == execution_id)
-        # порядок — как в REST GET /executions/{id}: по sequence (номер шага),
-        # который проставляет runner. created_at для порядка не годится — это
+        # порядок - как в REST GET /executions/{id}: по sequence (номер шага),
+        # который проставляет runner. created_at для порядка не годится - это
         # время транзакции, одинаковое у всех шагов запуска (5.B-fix)
         .order_by(ExecutionStep.sequence)
     )

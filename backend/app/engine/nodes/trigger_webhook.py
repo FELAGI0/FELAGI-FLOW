@@ -1,6 +1,6 @@
 """Webhook-триггер: точка входа запуска от внешнего HTTP-запроса.
 
-Выход по DESIGN.md §4 — `headers`, `query`, `body`. Значения приходят из
+Выход по DESIGN.md §4 - `headers`, `query`, `body`. Значения приходят из
 trigger_payload, который сформировал приёмник вебхука (/hooks/{token}).
 """
 

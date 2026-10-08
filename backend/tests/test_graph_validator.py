@@ -1,4 +1,4 @@
-"""Тесты валидатора графа — чистые функции, без БД и HTTP."""
+"""Тесты валидатора графа - чистые функции, без БД и HTTP."""
 
 from app.engine.graph_validator import validate_graph
 from app.engine.node_schemas import NODE_SCHEMAS

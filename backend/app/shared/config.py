@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     database_url: str = "postgresql+asyncpg://felagi:felagi@localhost:5432/felagi"
     # требовать TLS к Postgres независимо от хоста; managed-Postgres (Neon)
-    # определяется ещё и по домену — см. app/shared/db.py
+    # определяется ещё и по домену - см. app/shared/db.py
     db_ssl_require: bool = False
     fernet_key: str = ""
     # метка ключа Fernet, которым зашифрованы credentials (ПРАВКА 12).
@@ -19,15 +19,15 @@ class Settings(BaseSettings):
     llm_models: str = "[]"
     log_level: str = "INFO"
 
-    # без дефолта — приложение не стартует, пока секрет не задан
+    # без дефолта - приложение не стартует, пока секрет не задан
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 30
-    # secure=True только за TLS; в локальной разработке — False
+    # secure=True только за TLS; в локальной разработке - False
     cookie_secure: bool = False
-    # SameSite refresh-cookie: "lax" — когда фронт и api на одном сайте (Caddy
-    # локально), "none" — когда они на разных доменах (Vercel → Render), иначе
+    # SameSite refresh-cookie: "lax" - когда фронт и api на одном сайте (Caddy
+    # локально), "none" - когда они на разных доменах (Vercel -> Render), иначе
     # браузер не отправит cookie в cross-site запросе. "none" требует Secure.
     cookie_samesite: Literal["lax", "strict", "none"] = "lax"
 

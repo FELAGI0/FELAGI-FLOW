@@ -69,7 +69,7 @@ WorkspaceMemberDep = Annotated[WorkspaceMember, Depends(get_workspace_member)]
 
 
 def require_role(*roles: str) -> Callable[..., Awaitable[WorkspaceMember]]:
-    """Фабрика dependency: require_role("owner", "admin") → 403 при несоответствии роли."""
+    """Фабрика dependency: require_role("owner", "admin") -> 403 при несоответствии роли."""
 
     async def _dependency(member: WorkspaceMemberDep) -> WorkspaceMember:
         if member.role not in roles:

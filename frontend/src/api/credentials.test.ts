@@ -5,7 +5,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Тесты API-клиента credentials: URL, метод, тело, разворачивание items.
- * fetch мокается — реальной сети нет.
+ * fetch мокается - реальной сети нет.
  */
 
 function jsonResponse(body: unknown, status = 200): Response {

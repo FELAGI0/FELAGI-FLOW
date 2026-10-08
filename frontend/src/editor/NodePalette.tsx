@@ -22,7 +22,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_ORDER = ["trigger", "action", "transform", "logic", "debug"];
 
-/** Каталог меняется только с релизом бэкенда — держим кэш долго. */
+/** Каталог меняется только с релизом бэкенда - держим кэш долго. */
 export function useNodeTypes() {
     return useQuery({
         queryKey: ["node-types"],

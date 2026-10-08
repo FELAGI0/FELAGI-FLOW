@@ -13,7 +13,7 @@ class Workspace(TimestampMixin, Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     slug: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
-    # строка, а не enum — до этапа биллинга (DESIGN.md §2)
+    # строка, а не enum - до этапа биллинга (DESIGN.md §2)
     plan: Mapped[str] = mapped_column(String, nullable=False, default="free")
     created_by: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False

@@ -12,7 +12,7 @@ from app.shared.models.base import Base
 class Execution(Base):
     """Очередь выполнения: одновременно журнал запусков и рабочая очередь.
 
-    Схема — предмет spike 3.D: проверяем, что claim через SKIP LOCKED,
+    Схема - предмет spike 3.D: проверяем, что claim через SKIP LOCKED,
     heartbeat-reclaim и retry с backoff держатся на Postgres без брокера.
     """
 
@@ -23,12 +23,12 @@ class Execution(Base):
         Uuid, ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False
     )
     # запуск пинит версию графа: изменения черновика не влияют на идущий запуск.
-    # RESTRICT — версия, на которой стоит запуск, не удаляется (история запусков
+    # RESTRICT - версия, на которой стоит запуск, не удаляется (история запусков
     # остаётся воспроизводимой)
     workflow_version_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("workflow_versions.id", ondelete="RESTRICT"), nullable=False
     )
-    # 'manual'|'cron'|'webhook'|'poll' — откуда пришёл запуск
+    # 'manual'|'cron'|'webhook'|'poll' - откуда пришёл запуск
     trigger_type: Mapped[str] = mapped_column(String, nullable=False, default="manual")
     # полезная нагрузка триггера: то, что пришло от вебхука/расписания/ручного
     # запуска и доступно узлам как {{ trigger.payload.* }}

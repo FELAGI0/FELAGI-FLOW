@@ -1,7 +1,7 @@
 /**
  * URL WebSocket live-логов: схема и хост выводятся из окружения (Deploy.1).
  *
- * Без VITE_API_URL (как в тестах) база — origin страницы (jsdom: localhost),
+ * Без VITE_API_URL (как в тестах) база - origin страницы (jsdom: localhost),
  * и сокет идёт на ws://. Проверяем форму URL и что токен уходит в query.
  */
 
@@ -34,7 +34,7 @@ describe("ws URL", () => {
     });
 
     it("с VITE_API_URL (https) — wss:// на хосте api", async () => {
-        // API_BASE вычисляется на импорте модуля → пере-импортируем с env
+        // API_BASE вычисляется на импорте модуля -> пере-импортируем с env
         vi.stubEnv("VITE_API_URL", "https://felagi-api.onrender.com");
         vi.resetModules();
         const { connectExecutionLogs: connect } = await import("@/api/ws");

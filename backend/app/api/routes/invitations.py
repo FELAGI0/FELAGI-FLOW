@@ -16,14 +16,14 @@ from app.shared.schemas.invitation import (
     InvitationResponse,
 )
 
-# DESIGN.md §5: префикс /api у всего, кроме /hooks — иначе Caddy не проксирует
+# DESIGN.md §5: префикс /api у всего, кроме /hooks - иначе Caddy не проксирует
 router = APIRouter(prefix="/api", tags=["invitations"])
 
 AdminMember = Annotated[WorkspaceMember, Depends(require_role("owner", "admin"))]
 
 
 def _as_utc(value: datetime) -> datetime:
-    # SQLite (DateTime(timezone=True)) возвращает naive datetime, Postgres — aware;
+    # SQLite (DateTime(timezone=True)) возвращает naive datetime, Postgres - aware;
     # без нормализации сравнение с now(utc) падает на SQLite
     return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
 
@@ -140,7 +140,7 @@ async def accept_invitation(
             detail="Already a member of this workspace",
         )
 
-    # фиксируем до удаления: читать поля удалённого инстанса после commit — хрупко
+    # фиксируем до удаления: читать поля удалённого инстанса после commit - хрупко
     ws_id, role = invitation.workspace_id, invitation.role
 
     session.add(WorkspaceMember(workspace_id=ws_id, user_id=current_user.id, role=role))

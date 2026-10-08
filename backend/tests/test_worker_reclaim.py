@@ -37,7 +37,7 @@ async def _make_workflow(session: AsyncSession) -> tuple[uuid.UUID, uuid.UUID]:
 
 
 async def _stale_running(session: AsyncSession, *, minutes_ago: int = 5) -> uuid.UUID:
-    """Запуск в running с состаренным locked_at (как будто воркер «замолчал»)."""
+    """Запуск в running с состаренным locked_at (как будто воркер "замолчал")."""
     workflow_id, version_id = await _make_workflow(session)
     await enqueue(session, workflow_id, version_id)
     await session.commit()
@@ -62,7 +62,7 @@ async def _status(session: AsyncSession, execution_id: uuid.UUID) -> str:
 
 
 async def test_maybe_reclaim_returns_stale_to_queue(session: AsyncSession) -> None:
-    """Задача подвисшего воркера возвращается в queued — и её снова можно взять."""
+    """Задача подвисшего воркера возвращается в queued - и её снова можно взять."""
     execution_id = await _stale_running(session)
     assert await _status(session, execution_id) == "running"
 
@@ -71,7 +71,7 @@ async def test_maybe_reclaim_returns_stale_to_queue(session: AsyncSession) -> No
 
     assert reclaimed == 1
     assert await _status(session, execution_id) == "queued"
-    # задача снова доступна забору (attempts не «сгорел»)
+    # задача снова доступна забору (attempts не "сгорел")
     claimed = await claim_next(session, "fresh-worker")
     assert claimed is not None
     assert claimed.id == execution_id
@@ -82,7 +82,7 @@ async def test_maybe_reclaim_skips_within_interval(session: AsyncSession) -> Non
     await _stale_running(session)
     now = datetime.now(UTC)
 
-    # последний reclaim был только что → пропуск
+    # последний reclaim был только что -> пропуск
     reclaimed, new_last = await maybe_reclaim(
         session, last_reclaim_at=now, now=now, interval_seconds=30
     )

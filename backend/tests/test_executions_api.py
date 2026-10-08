@@ -211,7 +211,7 @@ async def test_list_only_own_workspace(
     assert a_list.status_code == 200
     assert all(item["workflow_id"] == a_wf for item in a_list.json()["items"])
 
-    # чужой workspace — 403
+    # чужой workspace - 403
     forbidden = await client.get(f"/api/workspaces/{a_ws}/executions", headers=_auth(b))
     assert forbidden.status_code == 403
 
@@ -274,12 +274,12 @@ async def test_list_filter_by_workflow(client: httpx.AsyncClient) -> None:
 
 
 async def test_cursor_pagination(client: httpx.AsyncClient, session: AsyncSession) -> None:
-    """25 executions, limit=10 → 10 + cursor, далее 10, затем 5 и cursor=null."""
+    """25 executions, limit=10 -> 10 + cursor, далее 10, затем 5 и cursor=null."""
     token = await _register(client, "paging@example.com")
     ws_id = await _ws_id(client, token)
     wf_id = await _published_workflow(client, token, ws_id)
 
-    # создаём 25 напрямую через модель — быстрее, чем 25 HTTP-запросов
+    # создаём 25 напрямую через модель - быстрее, чем 25 HTTP-запросов
     workflow = await session.get(Workflow, uuid.UUID(wf_id))
     assert workflow is not None
     assert workflow.published_version_id is not None
@@ -458,7 +458,7 @@ async def test_http_node_posts_json_body_with_query() -> None:
         {"http_transport": transport},
     )
     assert result["status"] == 201
-    assert result["body"] == "created"  # не-JSON → строка
+    assert result["body"] == "created"  # не-JSON -> строка
     assert "page=2" in str(captured["url"])
     assert captured["method"] == "POST"
     assert '"name"' in str(captured["body"])

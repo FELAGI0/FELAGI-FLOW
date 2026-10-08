@@ -1,13 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * UI.2 — генерация скриншотов для README (docs/screenshots/README.md).
+ * UI.2 - генерация скриншотов для README (docs/screenshots/README.md).
  *
- * Полный сценарий: регистрация → dark → credential → workflow
- * Cron → HTTP → LLM → Telegram → publish → run → 4 PNG.
+ * Полный сценарий: регистрация -> dark -> credential -> workflow
+ * Cron -> HTTP -> LLM -> Telegram -> publish -> run -> 4 PNG.
  *
  * Если env не задан (E2E_USER_.../E2E_TELEGRAM_...), тест логирует warning
- * и снимает «скелетные» экраны без данных — их всё равно можно использовать
+ * и снимает "скелетные" экраны без данных - их всё равно можно использовать
  * как заглушки README. Запуск:
  *
  *   cd frontend
@@ -96,7 +96,7 @@ async function auth(page: Page, creds: Creds) {
     await expect(page).toHaveURL(/\/workspaces$/);
 }
 
-/** Циклом дойти до dark: light → dark → system → light. */
+/** Циклом дойти до dark: light -> dark -> system -> light. */
 async function switchToDark(page: Page) {
     const toggle = page.getByTestId("theme-toggle");
     await expect(toggle).toBeVisible();
@@ -170,7 +170,7 @@ test("generate README screenshots in dark theme", async ({ page }) => {
     await expect(page).toHaveURL(/\/workspaces\/[^/]+\/workflows$/);
     const wsId = wsIdOf(page);
 
-    // 4: workflow Cron → HTTP → LLM → Telegram
+    // 4: workflow Cron -> HTTP -> LLM -> Telegram
     await page.getByTestId("create-workflow").click();
     await page.getByTestId("workflow-name-input").fill(WORKFLOW_NAME);
     await page.getByTestId("confirm-create-workflow").click();
@@ -191,7 +191,7 @@ test("generate README screenshots in dark theme", async ({ page }) => {
     await connectNodes(page, "LLM", "Telegram");
     await expect(page.locator(".react-flow__edge")).toHaveCount(3);
 
-    // 3: credential (только с env-токеном) — через SPA-переход
+    // 3: credential (только с env-токеном) - через SPA-переход
     let hasCredential = false;
     if (creds.telegramToken && creds.telegramChatId) {
         await navigateInApp(page, `/workspaces/${wsId}/credentials`);
@@ -249,7 +249,7 @@ test("generate README screenshots in dark theme", async ({ page }) => {
             page.getByTestId("toast-success").filter({ hasText: "Published v1" }),
         ).toBeVisible({ timeout: 30_000 });
 
-        // 6: запустить execution — редирект на detail
+        // 6: запустить execution - редирект на detail
         await page.getByTestId("run-button").click();
         await expect(page).toHaveURL(/\/executions\/[^/]+$/);
 
@@ -257,20 +257,20 @@ test("generate README screenshots in dark theme", async ({ page }) => {
         await page.waitForTimeout(8_000);
     }
 
-    // 8b: execution-live-dark.png — детали запуска (только в полном режиме)
+    // 8b: execution-live-dark.png - детали запуска (только в полном режиме)
     if (hasCredential) {
         await expect(page.getByText("Шаги")).toBeVisible();
         await page.waitForTimeout(2_000);
         await ensureDark(page);
         await page.screenshot({ path: `${SHOTS_DIR}/execution-live-dark.png`, fullPage: true });
 
-        // ← Запуски → ← Workflows → Редактировать (всё SPA-ссылками)
+        // ← Запуски -> ← Workflows -> Редактировать (всё SPA-ссылками)
         await page.getByRole("link", { name: "← Запуски" }).click();
         await expect(page).toHaveURL(/\/executions$/);
         await page.getByRole("link", { name: "← Workflows" }).click();
         await expect(page).toHaveURL(/\/workflows$/);
     } else {
-        // skeleton: пустая execution-страница без запуска — снимем список
+        // skeleton: пустая execution-страница без запуска - снимем список
         await navigateInApp(page, `/workspaces/${wsId}/executions`);
         await ensureDark(page);
         await page.waitForTimeout(500);
@@ -278,7 +278,7 @@ test("generate README screenshots in dark theme", async ({ page }) => {
         await navigateInApp(page, `/workspaces/${wsId}/workflows`);
     }
 
-    // 8a: editor-dark.png — редактор с графом
+    // 8a: editor-dark.png - редактор с графом
     await page
         .locator("li", { hasText: WORKFLOW_NAME })
         .getByRole("link", { name: "Редактировать" })
@@ -288,7 +288,7 @@ test("generate README screenshots in dark theme", async ({ page }) => {
     await ensureDark(page);
     await page.screenshot({ path: `${SHOTS_DIR}/editor-dark.png`, fullPage: true });
 
-    // 8d: node-panel-dark.png — панель параметров Telegram
+    // 8d: node-panel-dark.png - панель параметров Telegram
     await clickNode(page, "Telegram");
     const upstream = page.getByTestId("upstream-details");
     if (await upstream.count() > 0) {

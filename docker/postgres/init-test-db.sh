@@ -2,7 +2,7 @@
 # Выполняется один раз при первой инициализации тома pgdata.
 # Создаёт отдельную БД для тестов: conftest.py делает drop_all/create_all по
 # метаданным, поэтому TEST_DATABASE_URL нельзя направлять на рабочую БД
-# POSTGRES_DB — тесты снесут её схему.
+# POSTGRES_DB - тесты снесут её схему.
 set -eu
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL

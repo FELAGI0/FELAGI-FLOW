@@ -15,7 +15,7 @@ class Invitation(TimestampMixin, Base):
         Uuid, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
     )
     email: Mapped[str] = mapped_column(String, nullable=False, index=True)
-    # 'admin'|'member' — owner не приглашается (валидируется схемой, Literal)
+    # 'admin'|'member' - owner не приглашается (валидируется схемой, Literal)
     role: Mapped[str] = mapped_column(String, nullable=False, default="member")
     token: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

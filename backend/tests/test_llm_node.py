@@ -1,6 +1,6 @@
 """Тесты LLM-узла: OpenAI-совместимый API (backend/app/engine/nodes/llm.py).
 
-Мокаем AsyncOpenAI целиком — реальных сетевых вызовов нет. Настройки
+Мокаем AsyncOpenAI целиком - реальных сетевых вызовов нет. Настройки
 (api_key, base_url, LLM_MODELS) подменяем точечно через monkeypatch.
 """
 
@@ -17,7 +17,7 @@ from app.shared.config import settings
 
 
 def _fake_client(create: AsyncMock) -> MagicMock:
-    """AsyncOpenAI(...) → клиент, чей chat.completions.create — заданный мок."""
+    """AsyncOpenAI(...) -> клиент, чей chat.completions.create - заданный мок."""
     client = MagicMock()
     client.chat.completions.create = create
     return client
@@ -158,7 +158,7 @@ async def test_model_defaults_to_first_of_llm_models(monkeypatch: pytest.MonkeyP
     create = AsyncMock(return_value=_response())
     _patch_client(monkeypatch, create)
 
-    # model не задан → берётся первая из LLM_MODELS
+    # model не задан -> берётся первая из LLM_MODELS
     await llm.handle_llm({"prompt": "hi"}, {})
 
     assert create.call_args.kwargs["model"] == "gpt-5.6-luna"

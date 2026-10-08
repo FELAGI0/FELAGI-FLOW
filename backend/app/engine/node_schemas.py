@@ -1,6 +1,6 @@
 """Каталог типов узлов: метаданные + Pydantic-модель параметров каждого типа.
 
-NODE_SCHEMAS — единственный источник истины для палитры редактора
+NODE_SCHEMAS - единственный источник истины для палитры редактора
 (через GET /api/node-types) и для валидации графа (graph_validator).
 """
 
@@ -23,7 +23,7 @@ def _default_webhook_methods() -> list[Literal["GET", "POST"]]:
 class RetryConfig(BaseModel):
     """Политика повторов узла (DESIGN.md §4): общая для всех типов узлов.
 
-    max_retries — сколько ПОВТОРОВ после первой попытки (0 = без повторов,
+    max_retries - сколько ПОВТОРОВ после первой попытки (0 = без повторов,
     всего попыток max_retries + 1).
     """
 
@@ -36,7 +36,7 @@ class BaseNodeParams(BaseModel):
     """Общие параметры всех узлов: retry-политика и подпись на канвасе.
 
     Наследуется конкретными params-моделями, поэтому JSON-Schema каждого узла
-    (GET /api/node-types) содержит retry/label наравне с его полями — на этом
+    (GET /api/node-types) содержит retry/label наравне с его полями - на этом
     строится и валидация графа, и секция Retry в панели параметров.
     """
 
@@ -45,7 +45,7 @@ class BaseNodeParams(BaseModel):
 
 
 class TriggerManualParams(BaseNodeParams):
-    """Ручной запуск — своих параметров нет."""
+    """Ручной запуск - своих параметров нет."""
 
 
 class SetField(BaseModel):
@@ -75,7 +75,7 @@ class KeyValue(BaseModel):
 
 class HttpParams(BaseNodeParams):
     """Параметры HTTP-узла по DESIGN.md §4: headers[]/query[] списками,
-    auth — через credential (этап 6), timeout_s — таймаут запроса."""
+    auth - через credential (этап 6), timeout_s - таймаут запроса."""
 
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = "GET"
     url: str
@@ -96,9 +96,9 @@ class LlmParams(BaseNodeParams):
 
 
 class TelegramParams(BaseNodeParams):
-    """Telegram sendMessage (DESIGN.md, ПРАВКА 12): токен — в credential.
+    """Telegram sendMessage (DESIGN.md, ПРАВКА 12): токен - в credential.
 
-    credential_id — строка-UUID: узел грузит credential из БД по id и
+    credential_id - строка-UUID: узел грузит credential из БД по id и
     расшифровывает bot-токен. В панели параметров UI рендерит это поле
     выпадающим списком (см. ParamsPanel.tsx).
     """
@@ -113,7 +113,7 @@ class TelegramParams(BaseNodeParams):
 class CronParams(BaseNodeParams):
     """Cron-триггер: расписание запуска в указанной зоне.
 
-    timezone — IANA-имя ("UTC", "Europe/Berlin"); валидируется в graph_validator.
+    timezone - IANA-имя ("UTC", "Europe/Berlin"); валидируется в graph_validator.
     """
 
     cron_expr: str

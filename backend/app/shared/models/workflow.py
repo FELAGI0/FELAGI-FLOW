@@ -28,9 +28,9 @@ class Workflow(TimestampMixin, Base):
         Uuid, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(String, nullable=False)
-    # 'draft'|'active'|'paused' — строка, как plan и role (DESIGN.md §2)
+    # 'draft'|'active'|'paused' - строка, как plan и role (DESIGN.md §2)
     status: Mapped[str] = mapped_column(String, nullable=False, default="draft")
-    # use_alter=True: FK участвует в цикле workflows ↔ workflow_versions, поэтому
+    # use_alter=True: FK участвует в цикле workflows <-> workflow_versions, поэтому
     # SQLAlchemy выпускает её отдельным ALTER TABLE после создания обеих таблиц.
     # Имя обязательно: use_alter-констрейнт дропается явным DROP CONSTRAINT, а
     # безымянный Postgres отвергает (drop_all в тестах/CI падал с CompileError).
@@ -61,7 +61,7 @@ class WorkflowVersion(Base):
         Uuid, ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False)
-    # JSONB на Postgres, JSON на SQLite (тесты) — вариант по диалекту
+    # JSONB на Postgres, JSON на SQLite (тесты) - вариант по диалекту
     graph: Mapped[dict[str, Any]] = mapped_column(
         JSON().with_variant(JSONB(), "postgresql"), nullable=False
     )
@@ -69,7 +69,7 @@ class WorkflowVersion(Base):
     created_by: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
     )
-    # версии иммутабельны — только created_at, без updated_at
+    # версии иммутабельны - только created_at, без updated_at
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

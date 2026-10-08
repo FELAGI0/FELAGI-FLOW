@@ -1,7 +1,7 @@
 """Ручной триггер: точка входа графа.
 
 Реальные триггеры (webhook/cron/poll) появятся на этапе 5; здесь payload
-пустой — runner подставляет его из Execution.trigger_payload, когда появится.
+пустой - runner подставляет его из Execution.trigger_payload, когда появится.
 """
 
 from typing import Any

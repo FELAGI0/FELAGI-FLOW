@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Сквозной сценарий: регистрация → workspace → создание workflow →
- * сборка графа (Manual → Debug) → сохранение → публикация → статус active.
+ * Сквозной сценарий: регистрация -> workspace -> создание workflow ->
+ * сборка графа (Manual -> Debug) -> сохранение -> публикация -> статус active.
  * Требует поднятого стека (docker compose up -d).
  */
 test("register, build graph, save and publish", async ({ page }) => {
@@ -35,19 +35,19 @@ test("register, build graph, save and publish", async ({ page }) => {
 
     // 6-7. перетаскиваем узлы из палитры на канвас.
     // Разносим по горизонтали: сложенные по вертикали узлы перекрываются, и
-    // target-handle нижнего оказывается под телом верхнего — соединение не проходит
+    // target-handle нижнего оказывается под телом верхнего - соединение не проходит
     await dragToCanvas(page, "trigger_manual", 360, 220);
     await dragToCanvas(page, "debug", 680, 220);
     await expect(page.locator(".react-flow__node")).toHaveCount(2);
 
     // 8. соединяем: тянем от source-handle триггера к target-handle дебага.
-    // узлы ищем по подписям, а не по DOM-индексу — React Flow переупорядочивает DOM
+    // узлы ищем по подписям, а не по DOM-индексу - React Flow переупорядочивает DOM
     const triggerNode = page.locator(".react-flow__node", { hasText: "Manual Trigger" });
     const debugNode = page.locator(".react-flow__node", { hasText: "Debug" });
     await connectNodes(page, triggerNode, debugNode);
     await expect(page.locator(".react-flow__edge")).toHaveCount(1);
 
-    // 8b. заполняем обязательный параметр Debug через панель параметров —
+    // 8b. заполняем обязательный параметр Debug через панель параметров -
     // без него бэкенд отклоняет граф при сохранении (422)
     await debugNode.click();
     await page.getByTestId("param-message").fill("e2e");
@@ -64,7 +64,7 @@ test("register, build graph, save and publish", async ({ page }) => {
         page.getByTestId("toast-success").filter({ hasText: "Published v1" }),
     ).toBeVisible();
 
-    // 11. возвращаемся в список — статус active
+    // 11. возвращаемся в список - статус active
     await page.getByRole("link", { name: "← Назад" }).click();
     await expect(page).toHaveURL(/\/workflows$/);
     await expect(page.getByTestId("workflow-status-E2E test")).toHaveText("active");

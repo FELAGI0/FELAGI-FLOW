@@ -97,11 +97,11 @@ export function EditorPage() {
     const runMutation = useMutation({
         mutationFn: () => runWorkflow(wfId),
         onSuccess: (execution) => {
-            // сразу открываем детали запуска — там live/статус (5.C.2 добавит ленту)
+            // сразу открываем детали запуска - там live/статус (5.C.2 добавит ленту)
             navigate(`/workspaces/${wsId}/executions/${execution.id}`);
         },
         onError: (error) => {
-            // 409 — workflow не опубликован: подсказка вместо общей ошибки
+            // 409 - workflow не опубликован: подсказка вместо общей ошибки
             if (error instanceof ApiError && error.status === 409) {
                 toast.show("Workflow не опубликован — сначала опубликуйте", "error");
             } else {

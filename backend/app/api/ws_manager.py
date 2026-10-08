@@ -4,7 +4,7 @@
 целиком, поэтому SQLAlchemy-pool здесь не подходит. Получив NOTIFY, менеджер
 кладёт payload в очереди активных WS-соединений ЭТОГО процесса (fan-out).
 При нескольких репликах API каждая держит свой LISTEN и получает уведомление
-сама — рассылает только в свои соединения (DESIGN.md §3).
+сама - рассылает только в свои соединения (DESIGN.md §3).
 """
 
 import asyncio
@@ -21,11 +21,11 @@ logger = structlog.get_logger()
 
 
 def _asyncpg_dsn() -> tuple[str, dict[str, object]]:
-    """SQLAlchemy-URL → (DSN, connect_args) с тем же TLS, что у основного движка.
+    """SQLAlchemy-URL -> (DSN, connect_args) с тем же TLS, что у основного движка.
 
     LISTEN открывает своё соединение asyncpg (не через SQLAlchemy), поэтому
     нормализацию URL (драйвер без `+asyncpg`, вырезание `sslmode`, TLS для
-    Neon) нужно повторить — см. app/shared/db.py.
+    Neon) нужно повторить - см. app/shared/db.py.
     """
     url, connect_args = normalize_database_url(settings.database_url)
     return url.replace("+asyncpg", ""), connect_args
@@ -47,9 +47,9 @@ class ListenManager:
     async def start(self) -> None:
         if self._connection is not None:
             return
-        # регистрацию соединений начинаем с чистого листа: старт приложения —
+        # регистрацию соединений начинаем с чистого листа: старт приложения -
         # единственная точка, где состояние заведомо пусто (важно и для тестов,
-        # где менеджер — модульный синглтон)
+        # где менеджер - модульный синглтон)
         self._per_user.clear()
         dsn, connect_args = _asyncpg_dsn()
         self._connection = await asyncpg.connect(dsn, **connect_args)

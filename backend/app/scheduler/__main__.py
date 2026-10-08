@@ -1,11 +1,11 @@
 """Планировщик: тик по cron-расписаниям (DESIGN.md §3, этап 5).
 
 Один экземпляр в кластере: advisory-lock на уровне сессии Postgres. Тик
-делает ровно одно: превращает «созревшие» Schedule в Execution'ы со статусом
-queued, сдвигая next_run_at. Само выполнение — за воркерами.
+делает ровно одно: превращает "созревшие" Schedule в Execution'ы со статусом
+queued, сдвигая next_run_at. Само выполнение - за воркерами.
 
 pg_try_advisory_lock, а не pg_advisory_lock: второй заблокировал бы процесс на
-неопределённое время, а нам нужен именно «не смог взять — пропустил тик».
+неопределённое время, а нам нужен именно "не смог взять - пропустил тик".
 """
 
 import asyncio
@@ -29,7 +29,7 @@ logger = structlog.get_logger()
 SCHEDULER_TICK_SECONDS = 15
 # произвольный, но фиксированный ключ: он один на весь кластер
 SCHEDULER_LOCK_ID = 0x5EC0_1ED0
-# если lock взять не удалось (тик идёт в другом инстансе) — короткая пауза,
+# если lock взять не удалось (тик идёт в другом инстансе) - короткая пауза,
 # чтобы не долбить БД в цикле
 LOCK_RETRY_SECONDS = 5
 
@@ -43,7 +43,7 @@ def _request_shutdown() -> None:
 async def _due_schedules(session: AsyncSession, now: datetime) -> list[Schedule]:
     """Созревшие расписания: enabled, next_run_at <= now, с блокировкой строк.
 
-    FOR UPDATE SKIP LOCKED — тот же приём, что в очереди: строки, которые уже
+    FOR UPDATE SKIP LOCKED - тот же приём, что в очереди: строки, которые уже
     кто-то держит, пропускаются, поэтому второй планировщик не запустит то же
     расписание повторно.
     """
@@ -85,7 +85,7 @@ async def run_tick(session: AsyncSession, now: datetime | None = None) -> int:
         workflow = await session.get(Workflow, schedule.workflow_id)
         if workflow is None or workflow.published_version_id is None:
             # workflow снят с публикации: запускать нечего, но расписание
-            # оставляем и просто откладываем — иначе оно «застрянет» на
+            # оставляем и просто откладываем - иначе оно "застрянет" на
             # прошлом моменте и после повторной публикации зальёт очередью
             timezone = DEFAULT_TIMEZONE
             schedule.next_run_at = next_run_at(schedule.spec, timezone, moment)
@@ -136,7 +136,7 @@ async def main() -> None:
                 if created:
                     logger.info("scheduler.enqueued", count=created)
             except Exception as exc:
-                # тик упал: откатываем, но планировщик не останавливаем —
+                # тик упал: откатываем, но планировщик не останавливаем -
                 # иначе одна кривая строка расписания убьёт все остальные
                 await session.rollback()
                 logger.error("scheduler.tick_failed", error=str(exc))

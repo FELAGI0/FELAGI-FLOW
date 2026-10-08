@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware";
 /**
  * Тема UI.1. Хранится в localStorage (persist), применяется хуком useTheme.
  *
- * 'system' — следовать prefers-color-scheme; сам слушатель media-query живёт
+ * 'system' - следовать prefers-color-scheme; сам слушатель media-query живёт
  * в useTheme (стор остаётся чистым состоянием без побочных эффектов DOM).
  */
 export type Theme = "light" | "dark" | "system";

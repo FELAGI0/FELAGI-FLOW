@@ -2,7 +2,7 @@
 
 auth через credentials появится на этапе 6 (там Fernet-шифрование и
 интеграции). До этого auth передаётся как none, а наличие credential_id
-явно сигнализируется warning'ом — не молчаливой пустотой, чтобы пользователь
+явно сигнализируется warning'ом - не молчаливой пустотой, чтобы пользователь
 видел, что авторизация не применилась.
 """
 
@@ -17,7 +17,7 @@ DEFAULT_TIMEOUT_SECONDS = 30.0
 
 
 def _pairs_to_dict(pairs: Any) -> dict[str, str]:
-    """list[{name, value}] → dict. Терпимо к кривым элементам."""
+    """list[{name, value}] -> dict. Терпимо к кривым элементам."""
     result: dict[str, str] = {}
     if not isinstance(pairs, list):
         return result
@@ -48,7 +48,7 @@ async def handle_http(params: dict[str, Any], context: dict[str, Any]) -> dict[s
     query = _pairs_to_dict(params.get("query"))
     body = params.get("body")
 
-    # credentials (этап 6): сейчас не реализованы — предупреждаем явно
+    # credentials (этап 6): сейчас не реализованы - предупреждаем явно
     warnings: list[str] = []
     credential_id = params.get("credential_id")
     if credential_id:
@@ -68,7 +68,7 @@ async def handle_http(params: dict[str, Any], context: dict[str, Any]) -> dict[s
             request_kwargs["content"] = str(body)
 
     # transport инжектируется через context только в тестах (httpx.MockTransport);
-    # в рантайме context['http_transport'] отсутствует — обычный сетевой клиент
+    # в рантайме context['http_transport'] отсутствует - обычный сетевой клиент
     transport = context.get("http_transport")
     started = time.perf_counter()
     try:

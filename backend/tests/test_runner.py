@@ -30,7 +30,7 @@ pytestmark = pytest.mark.postgres
 async def _fixture_workflow(
     session: AsyncSession, graph: dict[str, object]
 ) -> tuple[uuid.UUID, uuid.UUID]:
-    """Создаёт user → workspace → workflow → version. Возвращает (workflow_id, version_id)."""
+    """Создаёт user -> workspace -> workflow -> version. Возвращает (workflow_id, version_id)."""
     suffix = uuid.uuid4().hex[:8]
     user = User(email=f"{suffix}@example.com", password_hash="h")
     session.add(user)
@@ -75,7 +75,7 @@ def _linear_graph() -> dict[str, object]:
 
 
 def _if_graph(branch_value: str) -> dict[str, object]:
-    """Manual → If(1=1) → true:Debug  /  false:Debug."""
+    """Manual -> If(1=1) -> true:Debug  /  false:Debug."""
     return {
         "nodes": [
             {"id": "t", "type": "trigger_manual", "params": {}, "position": {}},
@@ -282,7 +282,7 @@ async def test_worker_killed_reclaim_and_rerun(session: AsyncSession) -> None:
     assert claimed.attempts == 1
     await session.commit()
 
-    # A «умирает»: стареем locked_at, чтобы reclaim сработал
+    # A "умирает": стареем locked_at, чтобы reclaim сработал
     await session.execute(
         update(Execution)
         .where(Execution.id == claimed.id)
@@ -311,7 +311,7 @@ async def test_worker_killed_reclaim_and_rerun(session: AsyncSession) -> None:
 
 
 async def test_heartbeat_extends_lock_during_long_node(session: AsyncSession) -> None:
-    """run_execution продлевает locked_at на каждом узле — reclaim не тронет живого."""
+    """run_execution продлевает locked_at на каждом узле - reclaim не тронет живого."""
     workflow_id, version_id = await _fixture_workflow(session, _linear_graph())
     await enqueue(session, workflow_id, version_id)
     await session.commit()
@@ -372,7 +372,7 @@ async def test_failure_records_error_and_reschedules(session: AsyncSession) -> N
     await session.commit()
 
     assert result is not None
-    assert result.status == "queued"  # attempts=1 < max=3 → retry
+    assert result.status == "queued"  # attempts=1 < max=3 -> retry
     assert result.error == "node failed"
     assert result.status != "succeeded"
 

@@ -2,7 +2,7 @@
  * Переиспользуемый мок WebSocket для тестов (5.C.2).
  *
  * Эмулирует браузерный WebSocket: очередь экземпляров, открытие, доставку
- * сообщений и закрытие. Ставится глобально через `install()` — хук и клиент
+ * сообщений и закрытие. Ставится глобально через `install()` - хук и клиент
  * `connectExecutionLogs` создают `new WebSocket(...)`, и он перехватывается.
  */
 
@@ -42,7 +42,7 @@ export class MockWebSocket {
         this.onmessage?.(event);
     }
 
-    /** Прислать «сырое» сообщение (для проверки обработки битого JSON). */
+    /** Прислать "сырое" сообщение (для проверки обработки битого JSON). */
     simulateRawMessage(data: string): void {
         const event = { data } as MessageEvent<string>;
         this.onmessage?.(event);
@@ -94,7 +94,7 @@ export class MockWebSocket {
     }
 }
 
-/** Проверка, что установленный сейчас WebSocket — наш мок. */
+/** Проверка, что установленный сейчас WebSocket - наш мок. */
 export function asMock(socket: WebSocket): MockWebSocket {
     return socket as unknown as MockWebSocket;
 }

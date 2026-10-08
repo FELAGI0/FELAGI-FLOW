@@ -82,7 +82,7 @@ jobs:
       - name: Start stack
         run: docker compose up -d
 
-      # 30 × 2s = 60s; compose сам ждёт healthy api (depends_on),
+      # 30 x 2s = 60s; compose сам ждёт healthy api (depends_on),
       # цикл страхует от медленного старта caddy/postgres
       - name: Wait for /healthz
         run: |
@@ -136,7 +136,7 @@ jobs:
 
       # Стек поднимаем здесь, а не в globalSetup: E2E_SKIP_SETUP=1 отключает
       # встроенный `docker compose up` из playwright.config.ts, иначе образы
-      # собирались бы дважды. .env.example задаёт POSTGRES_PORT=5432 — совпадает
+      # собирались бы дважды. .env.example задаёт POSTGRES_PORT=5432 - совпадает
       # с портом на раннере, конфликта нет.
       - name: Start stack
         working-directory: .

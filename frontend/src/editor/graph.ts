@@ -3,7 +3,7 @@
  *
  * Сейчас здесь только `getUpstreamNodes`: какие узлы реально идут РАНЬШЕ
  * текущего (есть путь по edges до него). Это нужно панели параметров, чтобы
- * показать пользователю доступные expressions `{{ nodes.<id>.output... }}` —
+ * показать пользователю доступные expressions `{{ nodes.<id>.output... }}` -
  * иначе id узла не виден, и выражение не составить.
  */
 
@@ -22,7 +22,7 @@ export interface UpstreamInput {
 
 /** Множество предков nodeId: узлы, из которых есть путь по edges до nodeId. */
 function ancestorsOf(nodeId: string, edges: UpstreamInput["edges"]): Set<string> {
-    // обратные рёбра: target → [источники]
+    // обратные рёбра: target -> [источники]
     const incoming = new Map<string, string[]>();
     for (const edge of edges) {
         const list = incoming.get(edge.target);
@@ -87,7 +87,7 @@ function topologicalIds(input: UpstreamInput): string[] {
 
 /**
  * Узлы, из которых есть путь до nodeId, в порядке выполнения (topological).
- * `label` берётся из узла, при отсутствии — из type. Если узла нет в графе —
+ * `label` берётся из узла, при отсутствии - из type. Если узла нет в графе -
  * пустой массив.
  */
 export function getUpstreamNodes(nodeId: string, input: UpstreamInput): UpstreamNode[] {

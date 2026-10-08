@@ -1,7 +1,7 @@
-"""Нормализация DATABASE_URL для managed-Postgres (Neon) — app/shared/db.py.
+"""Нормализация DATABASE_URL для managed-Postgres (Neon) - app/shared/db.py.
 
-Neon отдаёт строку вида postgresql://…?sslmode=require&channel_binding=require,
-а asyncpg эти параметры не понимает (sslmode → TypeError). Проверяем, что
+Neon отдаёт строку вида postgresql://...?sslmode=require&channel_binding=require,
+а asyncpg эти параметры не понимает (sslmode -> TypeError). Проверяем, что
 normalize_database_url приводит URL к драйверу asyncpg, вырезает лишнее и
 включает TLS там, где он нужен.
 """
@@ -25,7 +25,7 @@ def test_neon_url_gets_driver_and_tls() -> None:
 
 
 def test_neon_host_detected_without_sslmode() -> None:
-    """TLS включается и без sslmode — по домену *.neon.tech."""
+    """TLS включается и без sslmode - по домену *.neon.tech."""
     url, connect_args = normalize_database_url("postgresql://u:p@ep-x.neon.tech/db")
     assert url.startswith("postgresql+asyncpg://")
     assert connect_args == {"ssl": "require"}

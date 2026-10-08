@@ -36,7 +36,7 @@ function step(id: string, nodeId = id): ExecutionStep {
     };
 }
 
-/** Подключить хук, «открыть» сокет и отдать снапшот — базовое состояние. */
+/** Подключить хук, "открыть" сокет и отдать снапшот - базовое состояние. */
 async function mountLive() {
     const rendered = renderHook(() => useExecutionLogs("exec-1", "test-token"));
     const socket = MockWebSocket.last();
@@ -64,7 +64,7 @@ describe("useExecutionLogs", () => {
     it("подключается: connecting → live, ставит execution и steps из snapshot", async () => {
         const { rendered, socket } = await mountLive();
 
-        // до snapshot (сразу после open) — live
+        // до snapshot (сразу после open) - live
         expect(rendered.result.current.connectionState).toBe("live");
 
         await act(async () => {
@@ -152,7 +152,7 @@ describe("useExecutionLogs", () => {
         await act(async () => {
             socket.simulateMessage({ type: "snapshot", execution: queued, steps: [] });
         });
-        // до завершения — устаревшие метаданные из снапшота
+        // до завершения - устаревшие метаданные из снапшота
         expect(rendered.result.current.execution?.attempts).toBe(0);
         expect(rendered.result.current.execution?.started_at).toBeNull();
 
@@ -240,7 +240,7 @@ describe("useExecutionLogs", () => {
         const rendered = renderHook(() => useExecutionLogs("exec-1", "test-token"));
 
         // сеть недоступна: соединение создаётся, но НЕ открывается и аномально
-        // закрывается (1006). Успешный open сбрасывал бы backoff — тогда
+        // закрывается (1006). Успешный open сбрасывал бы backoff - тогда
         // исчерпания не случилось бы, поэтому здесь open не эмулируем.
         for (let attempt = 0; attempt < 3; attempt += 1) {
             await act(async () => {
@@ -253,7 +253,7 @@ describe("useExecutionLogs", () => {
             });
         }
 
-        // 4-й сокет закрывается — попытки исчерпаны
+        // 4-й сокет закрывается - попытки исчерпаны
         await act(async () => {
             MockWebSocket.last().simulateClose(1006);
         });

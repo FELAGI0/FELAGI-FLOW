@@ -21,7 +21,7 @@ async function waitForServer(url: string, timeoutMs = 180_000): Promise<void> {
             const response = await fetch(`${url}/healthz`);
             if (response.ok) return;
         } catch {
-            // сервер ещё не поднялся — ждём дальше
+            // сервер ещё не поднялся - ждём дальше
         }
         await new Promise((resolve) => setTimeout(resolve, 2000));
     }

@@ -1,6 +1,6 @@
 """Воркер: claim-цикл поверх Postgres-очереди.
 
-Один процесс — один воркер; масштабирование — больше контейнеров
+Один процесс - один воркер; масштабирование - больше контейнеров
 (docker compose --scale worker=N). Планировщик отдельно (scheduler).
 
 Каждая итерация сначала возвращает в очередь задачи умерших воркеров
@@ -30,7 +30,7 @@ logger = structlog.get_logger()
 
 POLL_INTERVAL_SECONDS = 1.0
 
-# сколько «молчания» воркера считать падением (reclaim)
+# сколько "молчания" воркера считать падением (reclaim)
 HEARTBEAT_TIMEOUT_SECONDS = 60
 
 _shutdown = asyncio.Event()
@@ -63,12 +63,12 @@ async def maybe_reclaim(
 
 
 async def process_one(session: AsyncSession, execution: Execution, worker_id: str) -> None:
-    """Выполняет один запуск и закрывает его статус. Любая ошибка → complete(fail).
+    """Выполняет один запуск и закрывает его статус. Любая ошибка -> complete(fail).
 
     Шаги коммитятся сами (внутри run_execution, по одному). Здесь меняется только
     финальный статус execution, и он коммитится вызывающим (main). Финальный
     NOTIFY шлём в той же транзакции, что и смену статуса: иначе live-логи узнали
-    бы о завершении только по таймауту heartbeat (DESIGN.md §3, «финальный NOTIFY»).
+    бы о завершении только по таймауту heartbeat (DESIGN.md §3, "финальный NOTIFY").
     """
     version = await session.get(WorkflowVersion, execution.workflow_version_id)
     if version is None:
@@ -84,17 +84,17 @@ async def process_one(session: AsyncSession, execution: Execution, worker_id: st
     try:
         await run_execution(session, execution, version, worker_id)
     except ExecutionCancelled:
-        # отмена — терминальный статус, retry не нужен: оставляем 'canceled'
+        # отмена - терминальный статус, retry не нужен: оставляем 'canceled'
         execution.status = "canceled"
     except NodeExecutionError as exc:
-        # падение узла — прикладная ошибка запуска
+        # падение узла - прикладная ошибка запуска
         await complete(session, execution.id, success=False, error=str(exc))
     except Exception as exc:
         await complete(session, execution.id, success=False, error=str(exc))
     else:
         await complete(session, execution.id, success=True)
 
-    # статус либо терминальный, либо снова queued (retry) — в обоих случаях
+    # статус либо терминальный, либо снова queued (retry) - в обоих случаях
     # подписчику WS полезно проснуться и перечитать состояние
     await notify_exec_log(session, execution.id)
 
@@ -110,14 +110,14 @@ async def main() -> None:
         with contextlib.suppress(NotImplementedError):
             loop.add_signal_handler(sig, _request_shutdown)
 
-    # время последнего reclaim; None — ещё ни разу (первый пройдёт сразу)
+    # время последнего reclaim; None - ещё ни разу (первый пройдёт сразу)
     last_reclaim_at: datetime | None = None
 
     while not _shutdown.is_set():
         async with session_factory() as session:
             # reclaim идёт ПЕРЕД claim: задачи умерших воркеров должны вернуться
             # в общий пул, в том числе когда своей работы у этого воркера нет.
-            # Падение reclaim не должно ронять цикл — логируем и продолжаем.
+            # Падение reclaim не должно ронять цикл - логируем и продолжаем.
             try:
                 reclaimed, last_reclaim_at = await maybe_reclaim(
                     session, last_reclaim_at

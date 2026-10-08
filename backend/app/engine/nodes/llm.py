@@ -22,7 +22,7 @@ async def handle_llm(params: dict[str, Any], context: dict[str, Any]) -> dict[st
 
     model = str(params.get("model", ""))
     available = settings.llm_models_list
-    # дефолт — первая из LLM_MODELS; только затем проверяем, что модель разрешена
+    # дефолт - первая из LLM_MODELS; только затем проверяем, что модель разрешена
     if not model:
         model = available[0] if available else ""
     if available and model not in available:

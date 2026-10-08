@@ -14,7 +14,7 @@ import { useEditorStore } from "@/stores/editorStore";
 
 const PALETTE_MIME = "application/felagi-node";
 
-/** Узел выбирается по клику — так панель параметров получает контекст. */
+/** Узел выбирается по клику - так панель параметров получает контекст. */
 export function FlowCanvas() {
     const nodes = useEditorStore((state) => state.nodes);
     const edges = useEditorStore((state) => state.edges);

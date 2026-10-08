@@ -1,5 +1,5 @@
 """Кросс-tenant изоляция: user A не может ни читать, ни менять, ни удалять
-данные workspace B. Проверки — только через публичный API (httpx).
+данные workspace B. Проверки - только через публичный API (httpx).
 
 Состояние чужого workspace проверяется глазами его законного владельца
 (GET от user_b), а не запросом в БД.
@@ -52,7 +52,7 @@ async def _add_member(
     email: str,
     role: str,
 ) -> tuple[str, uuid.UUID]:
-    """Наполнение ролями — единственное место, где тест пишет в БД напрямую
+    """Наполнение ролями - единственное место, где тест пишет в БД напрямую
     (публичного API для назначения admin/owner нет; owner появляется только при register)."""
     token = await _register(client, email)
     uid = await _user_id(client, token)
@@ -108,7 +108,7 @@ async def tenants(client: httpx.AsyncClient, session: AsyncSession) -> Tenants:
 
 
 async def _name_as_owner(client: httpx.AsyncClient, tenant: Tenant) -> str:
-    """Имя workspace глазами его владельца — проверка «чужие данные не изменились»."""
+    """Имя workspace глазами его владельца - проверка "чужие данные не изменились"."""
     resp = await client.get(f"/api/workspaces/{tenant.ws_id}", headers=_auth(tenant.token))
     assert resp.status_code == 200, resp.text
     return str(resp.json()["name"])
@@ -264,7 +264,7 @@ async def test_cannot_accept_foreign_invitation(
     assert created.status_code == 201, created.text
     token = created.json()["invite_url"].rsplit("/", 1)[1]
 
-    # user_a знает token, но инвайт выпущен на чужой email → отказ
+    # user_a знает token, но инвайт выпущен на чужой email -> отказ
     resp = await client.post(
         f"/api/invitations/{token}/accept", headers=_auth(tenants.a.token)
     )
@@ -295,7 +295,7 @@ async def test_token_for_nonexistent_user_rejected(client: httpx.AsyncClient) ->
 async def test_foreign_token_is_scoped_to_its_subject(
     client: httpx.AsyncClient, tenants: Tenants
 ) -> None:
-    # валидный токен user_b действует как user_b — доступа к ws_a у него нет
+    # валидный токен user_b действует как user_b - доступа к ws_a у него нет
     resp = await client.get(f"/api/workspaces/{tenants.a.ws_id}", headers=_auth(tenants.b.token))
     assert resp.status_code == 403
 

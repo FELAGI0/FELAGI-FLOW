@@ -30,7 +30,7 @@ async def _user_id(client: httpx.AsyncClient, token: str) -> uuid.UUID:
 async def _owner_workspace(
     client: httpx.AsyncClient, session: AsyncSession, token: str
 ) -> Workspace:
-    # по created_by, а не по slug: slug нормализуется из email (подчёркивания → дефисы)
+    # по created_by, а не по slug: slug нормализуется из email (подчёркивания -> дефисы)
     uid = await _user_id(client, token)
     ws = await session.scalar(select(Workspace).where(Workspace.created_by == uid))
     assert ws is not None, "registered owner has no workspace"

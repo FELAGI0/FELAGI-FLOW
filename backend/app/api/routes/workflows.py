@@ -232,7 +232,7 @@ async def save_version(
         )
 
     # ponytail: max+1 без блокировки; гонка двух сохранений ловится
-    # unique(workflow_id, version) — редкий 409 вместо тихой потери версии
+    # unique(workflow_id, version) - редкий 409 вместо тихой потери версии
     max_version = await session.scalar(
         select(func.max(WorkflowVersion.version)).where(WorkflowVersion.workflow_id == workflow_id)
     )
@@ -244,7 +244,7 @@ async def save_version(
         created_by=current_user.id,
     )
     session.add(version)
-    # сохранение версии — это изменение workflow: обновляем updated_at для сортировки
+    # сохранение версии - это изменение workflow: обновляем updated_at для сортировки
     # списка (индекс ix_workflows_workspace_id_updated_at); onupdate не сработает,
     # т.к. других полей workflow мы не трогаем
     await session.execute(
@@ -278,7 +278,7 @@ async def publish_workflow(
             detail={"message": "Graph validation failed", "errors": errors},
         )
 
-    # schedules/webhook_routes — производные от графа: синхронизируем их той же
+    # schedules/webhook_routes - производные от графа: синхронизируем их той же
     # транзакцией, что и смену статуса, иначе получим активный workflow без
     # расписаний (или с расписаниями от прошлой версии)
     await sync_triggers(session, workflow.workspace_id, workflow.id, graph)

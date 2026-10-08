@@ -18,13 +18,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # server_default='0' — только чтобы заполнить существующие строки:
+    # server_default='0' - только чтобы заполнить существующие строки:
     # NOT NULL без дефолта не применится к непустой таблице.
     op.add_column(
         'execution_steps',
         sa.Column('sequence', sa.Integer(), nullable=False, server_default='0'),
     )
-    # Бэкфилл: ранее порядок определялся (created_at, node_id) — тем же ключом
+    # Бэкфилл: ранее порядок определялся (created_at, node_id) - тем же ключом
     # нумеруем старые строки в пределах запуска, начиная с 1.
     op.execute(
         """

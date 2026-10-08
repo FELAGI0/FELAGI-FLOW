@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { getUpstreamNodes, type UpstreamInput } from "@/editor/graph";
 
 /**
- * Граф Cron → HTTP → LLM → Telegram (цепочка). Проверяем, что для каждого узла
+ * Граф Cron -> HTTP -> LLM -> Telegram (цепочка). Проверяем, что для каждого узла
  * возвращаются ровно его предки (по пути edges) в порядке выполнения.
  */
 function chain(): UpstreamInput {
@@ -70,7 +70,7 @@ describe("getUpstreamNodes", () => {
             ],
             edges: [{ source: "a", target: "b" }],
         };
-        // unrelated не имеет пути до b — не должен попасть
+        // unrelated не имеет пути до b - не должен попасть
         expect(getUpstreamNodes("b", graph).map((n) => n.id)).toEqual(["a"]);
     });
 
@@ -79,7 +79,7 @@ describe("getUpstreamNodes", () => {
     });
 
     it("транзитивность и ветвление: собирает всех предков (diamond)", () => {
-        // a → b, a → c, b → d, c → d
+        // a -> b, a -> c, b -> d, c -> d
         const graph: UpstreamInput = {
             nodes: [
                 { id: "a", type: "trigger_manual" },

@@ -1,11 +1,11 @@
 """Публичный приём вебхуков: POST/GET /hooks/{token} (DESIGN.md §5).
 
 Без auth: token и есть секрет (генерируется при публикации, хранится в
-webhook_routes). Роутер подключён БЕЗ префикса /api — путь /hooks/{token}
+webhook_routes). Роутер подключён БЕЗ префикса /api - путь /hooks/{token}
 проксируется Caddy напрямую.
 
 Приём только ставит запуск в очередь: тело вебхука попадает в trigger_payload,
-а выполнение делает воркер. Ответ 202 — работа принята, не выполнена.
+а выполнение делает воркер. Ответ 202 - работа принята, не выполнена.
 """
 
 from typing import Any, Literal
@@ -25,7 +25,7 @@ router = APIRouter(tags=["hooks"])
 
 logger = structlog.get_logger()
 
-# тело вебхука кладём в trigger_payload целиком — размер ограничиваем, чтобы
+# тело вебхука кладём в trigger_payload целиком - размер ограничиваем, чтобы
 # не заливать JSONB мегабайтами (аналог MAX_BODY_CHARS в узле http)
 MAX_BODY_CHARS = 100_000
 
@@ -35,7 +35,7 @@ class WebhookAcceptedResponse(BaseModel):
 
 
 async def _read_body(request: Request) -> Any:
-    """Тело как JSON, а иначе — строкой (curl без заголовка тоже должен работать)."""
+    """Тело как JSON, а иначе - строкой (curl без заголовка тоже должен работать)."""
     raw = await request.body()
     if not raw:
         return None
@@ -53,7 +53,7 @@ async def _handle(
 ) -> WebhookAcceptedResponse:
     route = await session.scalar(select(WebhookRoute).where(WebhookRoute.token == token))
     if route is None:
-        # 404 и на несуществующий, и на удалённый маршрут: токен — секрет,
+        # 404 и на несуществующий, и на удалённый маршрут: токен - секрет,
         # различать эти случаи наружу незачем
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown webhook token")
 
@@ -117,7 +117,7 @@ async def _allowed_methods(
             continue
         params = node.get("params", {})
         if schema is not None:
-            # прогоняем через схему: дефолт и валидация — в одном месте
+            # прогоняем через схему: дефолт и валидация - в одном месте
             parsed = schema.params.model_validate(params)
             methods: list[str] = list(getattr(parsed, "methods", default))
             return methods

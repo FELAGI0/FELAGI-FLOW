@@ -1,7 +1,7 @@
 """Credentials: секреты воркспейса (Telegram bot-токен), зашифрованные Fernet.
 
-DESIGN.md §«credentials» + ПРАВКА 12. Наружу отдаются только метаданные —
-`encrypted_payload` никогда не сериализуется. Удаление — soft-delete.
+DESIGN.md §"credentials" + ПРАВКА 12. Наружу отдаются только метаданные -
+`encrypted_payload` никогда не сериализуется. Удаление - soft-delete.
 """
 
 import json
@@ -25,7 +25,7 @@ from app.shared.schemas.credential import (
 
 router = APIRouter(prefix="/api/workspaces", tags=["credentials"])
 
-# чтение — любому участнику; создание/удаление — owner или admin
+# чтение - любому участнику; создание/удаление - owner или admin
 Viewer = Annotated[WorkspaceMember, Depends(require_role("owner", "admin", "member"))]
 AdminMember = Annotated[WorkspaceMember, Depends(require_role("owner", "admin"))]
 
@@ -77,7 +77,7 @@ async def create_credential(
     session: DbSession,
 ) -> CredentialResponse:
     if not settings.fernet_key:
-        # секрет нельзя сохранить, если нечем шифровать — явная 500 с подсказкой
+        # секрет нельзя сохранить, если нечем шифровать - явная 500 с подсказкой
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="FERNET_KEY is not configured",

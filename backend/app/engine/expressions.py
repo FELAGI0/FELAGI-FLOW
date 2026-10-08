@@ -4,19 +4,19 @@
     {{ nodes.<node_id>.output.<path> }}
     {{ trigger.payload.<path> }}
 
-Где <path> — dot-path по JSON (foo.bar.0.baz).
+Где <path> - dot-path по JSON (foo.bar.0.baz).
 
-Без eval/exec: собственный токенизатор, потому что вход — пользовательский
-шаблон, а это trust boundary (DESIGN.md §4). Регулярками парсить не годится —
-нужно различать «весь шаблон целиком одно выражение» (вернуть значение как
-есть, сохранив тип) и «подстановка внутри строки» (вернуть строку).
+Без eval/exec: собственный токенизатор, потому что вход - пользовательский
+шаблон, а это trust boundary (DESIGN.md §4). Регулярками парсить не годится -
+нужно различать "весь шаблон целиком одно выражение" (вернуть значение как
+есть, сохранив тип) и "подстановка внутри строки" (вернуть строку).
 """
 
 from typing import Any
 
 OPEN = "{{"
 CLOSE = "}}"
-# защита от абсурдных выражений: путь глубже — почти наверняка ошибка
+# защита от абсурдных выражений: путь глубже - почти наверняка ошибка
 MAX_PATH_DEPTH = 32
 
 
@@ -44,7 +44,7 @@ _Token = _Literal | _Expression
 
 
 def _parse(template: str) -> list[_Token] | None:
-    """Токенизирует шаблон. None — если скобки не парны (шаблон считаем текстом)."""
+    """Токенизирует шаблон. None - если скобки не парны (шаблон считаем текстом)."""
     tokens: list[_Token] = []
     cursor = 0
     length = len(template)
@@ -60,14 +60,14 @@ def _parse(template: str) -> list[_Token] | None:
 
         end = template.find(CLOSE, start + len(OPEN))
         if end == -1:
-            # незакрытая скобка — не выражение, весь остаток как текст
+            # незакрытая скобка - не выражение, весь остаток как текст
             tokens.append(_Literal(template[start:]))
             break
 
         inner = template[start + len(OPEN) : end].strip()
         expression = _parse_expression(inner)
         if expression is None:
-            # содержимое не похоже на выражение — оставляем как текст дословно
+            # содержимое не похоже на выражение - оставляем как текст дословно
             tokens.append(_Literal(template[start : end + len(CLOSE)]))
         else:
             tokens.append(expression)
@@ -125,7 +125,7 @@ def _lookup(expression: _Expression, context: dict[str, Any]) -> tuple[Any, bool
 
 
 def _render(value: Any) -> str:
-    """Значение для строковой подстановки: объекты — через json.dumps."""
+    """Значение для строковой подстановки: объекты - через json.dumps."""
     if isinstance(value, str):
         return value
     if value is None:
@@ -142,10 +142,10 @@ def _render(value: Any) -> str:
 def resolve(template: str, context: dict[str, Any]) -> Any:
     """Подставляет выражения шаблона из контекста.
 
-    - шаблон целиком "{{ ... }}" → значение как есть (int/bool/dict), без строки;
-    - подстановка внутри строки → строка;
-    - ненайденный путь → "" (не бросаем);
-    - нет валидных выражений → шаблон как есть (проверено: type сохраняется).
+    - шаблон целиком "{{ ... }}" -> значение как есть (int/bool/dict), без строки;
+    - подстановка внутри строки -> строка;
+    - ненайденный путь -> "" (не бросаем);
+    - нет валидных выражений -> шаблон как есть (проверено: type сохраняется).
     """
     if not isinstance(template, str):
         return template
@@ -172,7 +172,7 @@ def resolve(template: str, context: dict[str, Any]) -> Any:
 
 
 def resolve_params(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
-    """Рекурсивно резолвит все строковые значения в params (словари/списки — вглубь)."""
+    """Рекурсивно резолвит все строковые значения в params (словари/списки - вглубь)."""
     resolved: dict[str, Any] = {}
     for key, value in params.items():
         resolved[key] = _resolve_value(value, context)

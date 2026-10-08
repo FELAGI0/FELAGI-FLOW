@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 
-/** Копирует текст в буфер обмена; при недоступности (нет API/запрет) — молча. */
+/** Копирует текст в буфер обмена; при недоступности (нет API/запрет) - молча. */
 export function copyToClipboard(text: string): void {
     void navigator.clipboard?.writeText(text).catch(() => undefined);
 }
@@ -10,16 +10,16 @@ export interface ExpressionInserter {
     focusField: (name: string) => (element: HTMLInputElement) => void;
     /**
      * Вставить expression: в активное поле (дописав в конец значения), а если
-     * фокуса на поле нет — скопировать в буфер обмена (fallback).
+     * фокуса на поле нет - скопировать в буфер обмена (fallback).
      */
     insert: (expression: string) => void;
-    /** Имя поля, в которое сейчас придёт вставка (null — фокуса нет). */
+    /** Имя поля, в которое сейчас придёт вставка (null - фокуса нет). */
     activeField: string | null;
 }
 
 /**
- * Трекинг фокуса поля параметра + вставка expression кликом по «доступным
- * данным». Вынесено из ParamsPanel, чтобы тестировать логику вставки без
+ * Трекинг фокуса поля параметра + вставка expression кликом по "доступным
+ * данным". Вынесено из ParamsPanel, чтобы тестировать логику вставки без
  * полной отрисовки панели (в проекте нет @testing-library/react).
  *
  * `draft`/`patch` читаются через ref: `insert` всегда использует актуальные

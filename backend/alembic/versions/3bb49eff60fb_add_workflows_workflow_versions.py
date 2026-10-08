@@ -46,7 +46,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('workflow_id', 'version', name='uq_workflow_versions_wf_version')
     )
-    # autogenerate вынес FK published_version_id inline в create_table — Postgres
+    # autogenerate вынес FK published_version_id inline в create_table - Postgres
     # молча отбрасывает такую FK (таблица workflow_versions ещё не существует),
     # поэтому добавляем её отдельным ALTER после создания обеих таблиц
     op.create_foreign_key(

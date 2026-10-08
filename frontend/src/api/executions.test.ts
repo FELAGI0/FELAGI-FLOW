@@ -10,7 +10,7 @@ import { useAuthStore } from "@/stores/authStore";
 
 /**
  * Тесты API-клиента executions: проверяем URL, метод и query-параметры.
- * fetch мокается — реальной сети нет.
+ * fetch мокается - реальной сети нет.
  */
 
 function jsonResponse(body: unknown): Response {

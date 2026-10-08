@@ -44,7 +44,7 @@ export function VersionHistoryPanel({
 
     function applyVersion(version: WorkflowVersion) {
         reset(version.graph);
-        // загрузка версии в канвас — это ещё не сохранённое изменение
+        // загрузка версии в канвас - это ещё не сохранённое изменение
         useEditorStore.setState({ isDirty: true });
         setPending(null);
         onOpenChange(false);

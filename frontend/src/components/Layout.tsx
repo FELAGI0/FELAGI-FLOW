@@ -12,8 +12,8 @@ const THEME_META: Record<Theme, { icon: LucideIcon; label: string }> = {
 };
 
 /**
- * Кнопка-переключатель темы (UI.1). Клик — циклически
- * light → dark → system → light. Применение к <html> делает useTheme,
+ * Кнопка-переключатель темы (UI.1). Клик - циклически
+ * light -> dark -> system -> light. Применение к <html> делает useTheme,
  * смонтированный один раз в App.
  */
 export function ThemeToggle() {
@@ -37,7 +37,7 @@ export function ThemeToggle() {
 
 /**
  * Общий каркас аутентифицированных экранов: шапка с брендом и переключателем
- * темы + область страницы. Редактор (EditorPage) сюда не входит — у него
+ * темы + область страницы. Редактор (EditorPage) сюда не входит - у него
  * собственный полноэкранный Toolbar.
  */
 export function Layout() {

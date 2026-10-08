@@ -53,7 +53,7 @@ async def _ws_id(client: httpx.AsyncClient, token: str) -> str:
 def _cron_graph(
     cron_expr: str = "0 9 * * *", timezone: str = "UTC", node_id: str = "c"
 ) -> dict[str, object]:
-    """Manual-совместимый граф с cron-триггером: trigger_cron → debug."""
+    """Manual-совместимый граф с cron-триггером: trigger_cron -> debug."""
     return {
         "nodes": [
             {
@@ -301,7 +301,7 @@ async def test_tick_skips_unpublished_workflow(session: AsyncSession) -> None:
 
     refreshed = await session.get(Schedule, schedule.id)
     assert refreshed is not None
-    # расписание не «застревает» на прошлом моменте
+    # расписание не "застревает" на прошлом моменте
     assert refreshed.next_run_at > past
 
 
@@ -353,7 +353,7 @@ async def test_publish_creates_webhook_route(
     )
     assert route is not None
     assert route.node_id == "w"
-    # token — секрет, а не id: значение достаточно длинное и непустое
+    # token - секрет, а не id: значение достаточно длинное и непустое
     assert len(route.token) >= 40
 
 

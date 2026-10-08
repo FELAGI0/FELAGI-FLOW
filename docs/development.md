@@ -6,7 +6,7 @@
 |---|---|---|
 | **Docker + Compose** | актуальные | Полный стек (`docker compose up`), E2E. |
 | **Python** | 3.13 (`>=3.13,<3.14`) | Backend. 3.14 пока не годится: нет колёс asyncpg/cryptography. |
-| **Postgres** | 16 | Для тестов — либо compose, либо локальный. |
+| **Postgres** | 16 | Для тестов - либо compose, либо локальный. |
 | **Node** | 22 (`>=22`) | Frontend. Vitest 4 требует 22+. |
 | **uv** | опционально | Управление venv (в репозитории есть `uv.lock` окружения). |
 
@@ -41,14 +41,14 @@ alembic upgrade head          # применить миграции
 uvicorn app.main:app --reload --port 8000
 ```
 
-Воркер и планировщик — отдельными процессами:
+Воркер и планировщик - отдельными процессами:
 
 ```bash
 python -m app.worker
 python -m app.scheduler
 ```
 
-> `JWT_SECRET_KEY` — обязательная настройка без дефолта: без неё приложение не
+> `JWT_SECRET_KEY` - обязательная настройка без дефолта: без неё приложение не
 > стартует. `alembic` тоже читает настройки, поэтому переменную нужно задать и
 > для миграций.
 
@@ -74,9 +74,9 @@ pytest -v
 - **Без `TEST_DATABASE_URL`** тесты идут на SQLite in-memory, а всё, что помечено
   `@pytest.mark.postgres`, **пропускается** (`conftest.pytest_collection_modifyitems`).
   Postgres-маркер стоит там, где нужны реальные `SKIP LOCKED`, `pg_notify`,
-  `LISTEN`, advisory-локи — на SQLite их нет.
+  `LISTEN`, advisory-локи - на SQLite их нет.
 - С `TEST_DATABASE_URL` запускается весь набор.
-- **Никогда не направляйте `TEST_DATABASE_URL` на рабочую БД** — `conftest`
+- **Никогда не направляйте `TEST_DATABASE_URL` на рабочую БД** - `conftest`
   сносит схему. Для этого в compose есть отдельная БД
   (`docker/postgres/init-test-db.sh`).
 
@@ -104,7 +104,7 @@ npx playwright test
 
 ```bash
 cd backend
-export DATABASE_URL="postgresql+asyncpg://…"
+export DATABASE_URL="postgresql+asyncpg://..."
 
 alembic current                       # текущая ревизия
 alembic upgrade head                  # применить все
@@ -114,11 +114,11 @@ alembic downgrade base                # откатить всё
 alembic revision -m "add x to y"      # новая пустая ревизия (заполнить вручную)
 ```
 
-- Миграции — только явные (`op.add_column`/`create_table`), без автогенерации
+- Миграции - только явные (`op.add_column`/`create_table`), без автогенерации
   из моделей: контроль над DDL важнее удобства.
 - Новую колонку `NOT NULL` на непустой таблице добавляйте с `server_default`,
   затем (при желании) снимайте дефолт отдельным `alter_column`.
-- Миграции **не покрыты** в CI на SQLite — проверяйте upgrade **и** downgrade на
+- Миграции **не покрыты** в CI на SQLite - проверяйте upgrade **и** downgrade на
   реальном Postgres.
 
 ## Структура проекта
@@ -127,7 +127,7 @@ alembic revision -m "add x to y"      # новая пустая ревизия (
 FELAGI-FLOW/
 ├── backend/
 │   ├── app/
-│   │   ├── api/routes/      # HTTP-роутеры (auth, workspaces, workflows, executions, hooks, ws …)
+│   │   ├── api/routes/      # HTTP-роутеры (auth, workspaces, workflows, executions, hooks, ws ...)
 │   │   ├── api/ws_manager.py# LISTEN-менеджер для live-логов
 │   │   ├── engine/          # runner, graph_validator, node_schemas, очередь, expressions
 │   │   │   └── nodes/       # обработчики узлов (по одному на тип)
@@ -155,11 +155,11 @@ FELAGI-FLOW/
 
 ## Как добавить новый тип узла (5 шагов)
 
-Тип узла — это запись в трёх местах: схема параметров, обработчик, и (для
+Тип узла - это запись в трёх местах: схема параметров, обработчик, и (для
 триггеров/спец-валидации) правило валидатора. Палитра и валидация читают
 `NODE_SCHEMAS`, поэтому дублировать метаданные не нужно.
 
-**Шаг 1. Параметры узла** — `backend/app/engine/node_schemas.py`:
+**Шаг 1. Параметры узла** - `backend/app/engine/node_schemas.py`:
 
 ```python
 class MyActionParams(BaseNodeParams):
@@ -174,21 +174,21 @@ NODE_SCHEMAS["action_myaction"] = NodeSchema(
 `BaseNodeParams` уже даёт `retry` и `label`. JSON-Schema отсюда автоматически
 попадёт в `GET /api/node-types` и в панель параметров фронтенда.
 
-**Шаг 2. Обработчик** — `backend/app/engine/nodes/myaction.py`:
+**Шаг 2. Обработчик** - `backend/app/engine/nodes/myaction.py`:
 
 ```python
 async def handle_myaction(params: dict[str, Any], context: dict[str, Any]) -> dict[str, Any]:
     # context["nodes"][id]["output"] доступен как {{ nodes.<id>.output.* }}
     if not params.get("url"):
-        return {"error": "url is required"}   # error → шаг failed
+        return {"error": "url is required"}   # error -> шаг failed
     return {"result": "..."}                  # output шага
 ```
 
 Обработчики async (`handler(params, context) -> dict`). Верните `{"error": ...}`
-для ошибки шага или `{"warning": ...}` для нефатального предупреждения —
+для ошибки шага или `{"warning": ...}` для нефатального предупреждения -
 runner разложит по статусу и `warnings`.
 
-**Шаг 3. Регистрация** — `backend/app/engine/nodes/__init__.py`:
+**Шаг 3. Регистрация** - `backend/app/engine/nodes/__init__.py`:
 
 ```python
 from app.engine.nodes.myaction import handle_myaction
@@ -201,11 +201,11 @@ HANDLERS["action_myaction"] = handle_myaction
 
 **Шаг 5. Тесты.**
 
-- `backend/tests/test_runner.py` — узел реально выполняется (output в шаге).
-- `backend/tests/test_graph_validator.py` — принимает/отвергает параметры.
+- `backend/tests/test_runner.py` - узел реально выполняется (output в шаге).
+- `backend/tests/test_graph_validator.py` - принимает/отвергает параметры.
 - Frontend-палитра подхватит узел автоматически по категории; отдельного кода
   для `action_*`/`transform_*` писать не нужно. Если для узла нужен особый
-  виджет параметров — добавьте поле в `frontend/src/editor/ParamsPanel.tsx`.
+  виджет параметров - добавьте поле в `frontend/src/editor/ParamsPanel.tsx`.
 
 Проверки перед коммитом:
 
@@ -216,9 +216,9 @@ cd frontend && npx tsc --noEmit && npx vitest run
 
 ## Стиль кода
 
-- **Коммиты** — [Conventional Commits](https://www.conventionalcommits.org/):
-  `feat(scope): …`, `fix(scope): …`, `chore: …`. Сообщения на английском.
-- **Backend** — ruff (`select = E,F,I,UP,B,SIM,RUF`) + mypy strict. `# type:
-  ignore` не используется; для библиотек без типов — точечные
+- **Коммиты** - [Conventional Commits](https://www.conventionalcommits.org/):
+  `feat(scope): ...`, `fix(scope): ...`, `chore: ...`. Сообщения на английском.
+- **Backend** - ruff (`select = E,F,I,UP,B,SIM,RUF`) + mypy strict. `# type:
+  ignore` не используется; для библиотек без типов - точечные
   `[[tool.mypy.overrides]]`.
-- **Frontend** — TypeScript strict, без `@ts-ignore`.
+- **Frontend** - TypeScript strict, без `@ts-ignore`.

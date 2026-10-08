@@ -46,7 +46,7 @@ async def _member_response(session: AsyncSession, member: WorkspaceMember) -> Me
 
 @router.get("", response_model=list[WorkspaceResponse])
 async def list_workspaces(current_user: CurrentUser, session: DbSession) -> list[WorkspaceResponse]:
-    # один запрос с JOIN — без N+1 по роли каждого workspace
+    # один запрос с JOIN - без N+1 по роли каждого workspace
     rows = await session.execute(
         select(Workspace, WorkspaceMember.role)
         .join(WorkspaceMember, WorkspaceMember.workspace_id == Workspace.id)
@@ -57,7 +57,7 @@ async def list_workspaces(current_user: CurrentUser, session: DbSession) -> list
 
 @router.get("/{ws_id}", response_model=WorkspaceResponse)
 async def get_workspace(member: WorkspaceMemberDep, session: DbSession) -> WorkspaceResponse:
-    # get_workspace_member уже загрузил workspace в identity map — второй get без запроса
+    # get_workspace_member уже загрузил workspace в identity map - второй get без запроса
     workspace = await session.get(Workspace, member.workspace_id)
     assert workspace is not None
     return _to_response(workspace, member.role)

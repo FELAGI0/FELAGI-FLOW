@@ -32,7 +32,7 @@ REFRESH_COOKIE = "refresh_token"
 CurrentUser = Annotated[User, Depends(get_current_user)]
 RefreshCookie = Annotated[str | None, Cookie(alias=REFRESH_COOKIE)]
 # `= None` обязателен: в Annotated-стиле опциональность даёт default, а не `| None`,
-# иначе отсутствующая cookie → 422 вместо нашего 401
+# иначе отсутствующая cookie -> 422 вместо нашего 401
 
 _UNAUTHORIZED = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -105,7 +105,7 @@ async def register(body: RegisterRequest, response: Response, session: DbSession
 @router.post("/login", response_model=TokenResponse)
 async def login(body: LoginRequest, response: Response, session: DbSession) -> TokenResponse:
     user = await _find_user(session, body.email)
-    # одинаковая ошибка и для «нет такого», и для «не тот пароль» — не раскрываем существование
+    # одинаковая ошибка и для "нет такого", и для "не тот пароль" - не раскрываем существование
     if user is None or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 

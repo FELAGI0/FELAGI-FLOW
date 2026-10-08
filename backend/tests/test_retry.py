@@ -2,8 +2,8 @@
 
 Отказ узла подменяется на уровне runner.handle (см. _stub_debug): так тест
 проверяет именно retry-цикл runner'а, а не поведение конкретного узла, и
-остаётся детерминированным (без сети и без реального узла, который «иногда»
-падает). Граф при этом всегда валиден — иначе runner упал бы на валидации
+остаётся детерминированным (без сети и без реального узла, который "иногда"
+падает). Граф при этом всегда валиден - иначе runner упал бы на валидации
 параметров ещё до retry, и тест проверял бы не то, что заявлено.
 
 Интеграционные тесты помечены postgres: нужна реальная БД для claim/heartbeat.
@@ -53,7 +53,7 @@ def test_backoff_delay_fixed_returns_base_s() -> None:
 
 def test_backoff_delay_exponential_doubles_each_attempt() -> None:
     config = _config("exponential", 0.5)
-    # attempt=1 → base_s, attempt=2 → 2*base_s, attempt=3 → 4*base_s
+    # attempt=1 -> base_s, attempt=2 -> 2*base_s, attempt=3 -> 4*base_s
     assert [_backoff_delay(config, attempt) for attempt in (1, 2, 3)] == [0.5, 1.0, 2.0]
 
 
@@ -128,20 +128,20 @@ def test_validator_rejects_negative_max_retries() -> None:
 
 
 def test_validator_accepts_node_without_retry() -> None:
-    """Узел без retry валиден: повторов нет (retry — необязательное поле)."""
+    """Узел без retry валиден: повторов нет (retry - необязательное поле)."""
     graph = _graph_with_retry(None)
     assert validate_graph(graph, NODE_SCHEMAS) == []
 
 
 def test_retry_and_label_are_available_on_every_node_type() -> None:
-    """retry/label объявлены в BaseNodeParams → попадают в JSON-Schema всех узлов."""
+    """retry/label объявлены в BaseNodeParams -> попадают в JSON-Schema всех узлов."""
     for node_type, schema in NODE_SCHEMAS.items():
         properties = schema.params.model_json_schema()["properties"]
         assert "retry" in properties, node_type
         assert "label" in properties, node_type
 
 
-# --- API: invalid backoff → 422 ----------------------------------------------
+# --- API: invalid backoff -> 422 ----------------------------------------------
 
 
 def _auth(token: str) -> dict[str, str]:
@@ -204,7 +204,7 @@ async def _fixture_workflow(
 
 
 def _debug_graph(retry: object | None) -> dict[str, object]:
-    """Manual → Debug с ВАЛИДНЫМИ параметрами: отказ подменяется стабом."""
+    """Manual -> Debug с ВАЛИДНЫМИ параметрами: отказ подменяется стабом."""
     params: dict[str, object] = {"message": "payload"}
     if retry is not None:
         params["retry"] = retry
@@ -225,7 +225,7 @@ def _stub_debug(
 ) -> dict[str, int]:
     """Подменяет runner.handle: узел debug падает первые fail_times раз.
 
-    fail_times=None — падает всегда. Остальные узлы (триггер) идут в реальный
+    fail_times=None - падает всегда. Остальные узлы (триггер) идут в реальный
     обработчик, иначе запуск упал бы на первом же шаге.
     """
     from app.engine.nodes import handle as real_handle
@@ -277,7 +277,7 @@ async def _run_expecting_failure(
 async def test_retry_disabled_fails_on_first_attempt(
     session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """retry отсутствует → повторов нет: 1 попытка, узел failed, запуск падает."""
+    """retry отсутствует -> повторов нет: 1 попытка, узел failed, запуск падает."""
     calls = _stub_debug(monkeypatch, fail_times=None)
     _, version_id = await _fixture_workflow(session, _debug_graph(None))
 
@@ -289,7 +289,7 @@ async def test_retry_disabled_fails_on_first_attempt(
     assert steps[0].attempt == 1
     assert steps[0].status == "failed"
 
-    # терминальный статус: у executions нет 'failed' — max_attempts=1 → dead
+    # терминальный статус: у executions нет 'failed' - max_attempts=1 -> dead
     result = await complete(session, execution.id, success=False, error="node failed")
     await session.commit()
     assert result is not None
@@ -300,7 +300,7 @@ async def test_retry_disabled_fails_on_first_attempt(
 async def test_max_retries_zero_fails_immediately(
     session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Явный max_retries=0 — то же поведение, что и без retry: 1 попытка."""
+    """Явный max_retries=0 - то же поведение, что и без retry: 1 попытка."""
     calls = _stub_debug(monkeypatch, fail_times=None)
     _, version_id = await _fixture_workflow(
         session, _debug_graph({"max_retries": 0, "backoff": "fixed", "base_s": 0.01})
@@ -318,7 +318,7 @@ async def test_max_retries_zero_fails_immediately(
 async def test_max_retries_two_writes_three_attempts(
     session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """max_retries=2, узел падает всегда → 3 попытки (attempt=1,2,3), запуск падает."""
+    """max_retries=2, узел падает всегда -> 3 попытки (attempt=1,2,3), запуск падает."""
     calls = _stub_debug(monkeypatch, fail_times=None)
     _, version_id = await _fixture_workflow(
         session, _debug_graph({"max_retries": 2, "backoff": "fixed", "base_s": 0.01})
@@ -337,7 +337,7 @@ async def test_max_retries_two_writes_three_attempts(
 async def test_max_retries_two_succeeds_on_third_attempt(
     session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Падает дважды, на третьей попытке успех → запуск succeeded, 3 шага."""
+    """Падает дважды, на третьей попытке успех -> запуск succeeded, 3 шага."""
     calls = _stub_debug(monkeypatch, fail_times=2)
     _, version_id = await _fixture_workflow(
         session, _debug_graph({"max_retries": 2, "backoff": "fixed", "base_s": 0.01})
@@ -377,7 +377,7 @@ async def test_fixed_backoff_sleeps_base_s_between_attempts(
     )
     await _run_expecting_failure(session, version_id)
 
-    # 2 повтора → 2 паузы, обе равны base_s
+    # 2 повтора -> 2 паузы, обе равны base_s
     assert delays == [2.0, 2.0]
 
 
@@ -398,7 +398,7 @@ async def test_exponential_backoff_sleeps_doubling_delays(
     )
     await _run_expecting_failure(session, version_id)
 
-    # attempt=1 → 0.5, attempt=2 → 1.0
+    # attempt=1 -> 0.5, attempt=2 -> 1.0
     assert delays == [0.5, 1.0]
 
 
@@ -429,7 +429,7 @@ async def test_no_sleep_when_retries_exhausted_check_order(
 async def test_heartbeat_called_between_attempts(
     session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Между попытками воркер продлевает лок — иначе reclaim подберёт живого."""
+    """Между попытками воркер продлевает лок - иначе reclaim подберёт живого."""
     calls: list[uuid.UUID] = []
 
     async def recording_heartbeat(
@@ -461,7 +461,7 @@ async def test_heartbeat_called_between_attempts(
 async def test_heartbeat_prevents_reclaim_while_retrying(
     session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Состаренный лок + retry с heartbeat → задача не отбирается у живого воркера."""
+    """Состаренный лок + retry с heartbeat -> задача не отбирается у живого воркера."""
     from app.engine.queue import reclaim_stale
 
     async def fake_sleep(delay: float) -> None:
@@ -475,7 +475,7 @@ async def test_heartbeat_prevents_reclaim_while_retrying(
     )
     execution = await _claim(session)
 
-    # воркер «молчал» дольше heartbeat-таймаута — до первого heartbeat внутри run
+    # воркер "молчал" дольше heartbeat-таймаута - до первого heartbeat внутри run
     await session.execute(
         update(Execution)
         .where(Execution.id == execution.id)
@@ -524,7 +524,7 @@ async def test_expression_resolved_once_before_retries(
     """Параметры резолвятся один раз до цикла: все попытки видят один и тот же input."""
     _stub_debug(monkeypatch, fail_times=None)
     graph = _debug_graph({"max_retries": 1, "backoff": "fixed", "base_s": 0.01})
-    # в message кладём выражение — runner резолвит его до вызова узла
+    # в message кладём выражение - runner резолвит его до вызова узла
     nodes = graph["nodes"]
     assert isinstance(nodes, list)
     debug_node = nodes[1]
@@ -551,7 +551,7 @@ async def test_expression_resolved_once_before_retries(
 async def test_execution_detail_exposes_step_attempt(
     client: httpx.AsyncClient, session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """GET /executions/{id} отдаёт attempt каждого шага — UI показывает попытки."""
+    """GET /executions/{id} отдаёт attempt каждого шага - UI показывает попытки."""
     suffix = uuid.uuid4().hex[:8]
     resp = await client.post(
         "/api/auth/register",

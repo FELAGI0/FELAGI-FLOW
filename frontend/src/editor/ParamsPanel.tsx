@@ -29,9 +29,9 @@ function baseProperty(prop: JsonSchemaProperty): JsonSchemaProperty {
 }
 
 /**
- * Выбор credential для узлов с секретами (action_telegram). Список — из
+ * Выбор credential для узлов с секретами (action_telegram). Список - из
  * GET /api/workspaces/{ws}/credentials; секрет наружу не отдаётся, только имя.
- * Если credentials нет — ссылка «Добавить» на страницу управления.
+ * Если credentials нет - ссылка "Добавить" на страницу управления.
  */
 function CredentialField({
     value,
@@ -95,7 +95,7 @@ interface FieldProps {
     required: boolean;
     value: unknown;
     onChange: (value: unknown) => void;
-    /** Уведомляет панель, что это поле в фокусе — для вставки expression кликом. */
+    /** Уведомляет панель, что это поле в фокусе - для вставки expression кликом. */
     onFocus?: (element: HTMLInputElement) => void;
 }
 
@@ -187,7 +187,7 @@ const RETRY_DEFAULTS = {
     base_s: 1.0,
 } as const;
 
-/** Варианты backoff — те же, что в pydantic Literal["fixed", "exponential"]. */
+/** Варианты backoff - те же, что в pydantic Literal["fixed", "exponential"]. */
 type Backoff = "fixed" | "exponential";
 
 interface RetrySectionProps {
@@ -198,7 +198,7 @@ interface RetrySectionProps {
 /**
  * Секция Retry + label: общая для всех типов узлов.
  * Значения лежат в тех же params, что уходят на бэкенд (node.params.retry / .label).
- * Пока пользователь не изменил поле, в params ничего не пишется — вместо
+ * Пока пользователь не изменил поле, в params ничего не пишется - вместо
  * отсутствующего retry показываются дефолты.
  */
 function RetrySection({ params, onPatch }: RetrySectionProps) {
@@ -217,7 +217,7 @@ function RetrySection({ params, onPatch }: RetrySectionProps) {
         onPatch({ retry: { max_retries: maxRetries, backoff, base_s: baseS, ...next } });
     }
 
-    /** Пустое поле возвращается к дефолту — иначе в params ушёл бы NaN. */
+    /** Пустое поле возвращается к дефолту - иначе в params ушёл бы NaN. */
     function numberOrDefault(raw: string, fallback: number): number {
         if (raw === "") return fallback;
         const parsed = Number(raw);
@@ -310,7 +310,7 @@ export function ParamsPanel() {
 
     const properties = useMemo(() => {
         const all = schema?.params_schema.properties ?? {};
-        // retry/label рендерит RetrySection — иначе они дублировались бы как
+        // retry/label рендерит RetrySection - иначе они дублировались бы как
         // поля схемы (retry приходит объектом и не рисуется текстовым input'ом)
         return Object.fromEntries(
             Object.entries(all).filter(([name]) => !COMMON_PARAMS.includes(name)),
@@ -330,7 +330,7 @@ export function ParamsPanel() {
         updateNodeParams(node.id, next);
     }
 
-    // вставка expression кликом по «доступным данным»: в активное поле или clipboard
+    // вставка expression кликом по "доступным данным": в активное поле или clipboard
     const { focusField, insert } = useExpressionInserter(draft, patchParams);
 
     const upstreamNodes = useMemo(
@@ -356,7 +356,7 @@ export function ParamsPanel() {
         }
         const initial: Record<string, unknown> = {};
         // retry/label не входят в properties (их рисует RetrySection), поэтому
-        // переносим их из узла напрямую — иначе первое же изменение param'а
+        // переносим их из узла напрямую - иначе первое же изменение param'а
         // в секции Retry затирало бы ранее сохранённые retry/label
         for (const name of COMMON_PARAMS) {
             if (node.data.params[name] !== undefined) {

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.shared.models.base import Base
 
-# длина token_urlsafe(32) — 43 символа; колонка с запасом
+# длина token_urlsafe(32) - 43 символа; колонка с запасом
 TOKEN_BYTES = 32
 
 
@@ -17,9 +17,9 @@ def generate_token() -> str:
 
 
 class WebhookRoute(Base):
-    """Публичный вебхук: token → (workflow, узел-триггер).
+    """Публичный вебхук: token -> (workflow, узел-триггер).
 
-    Синхронизируется из графа при публикации. Приём вебхука — один lookup по
+    Синхронизируется из графа при публикации. Приём вебхука - один lookup по
     первичному ключу, без разбора JSONB (DESIGN.md §2).
     """
 

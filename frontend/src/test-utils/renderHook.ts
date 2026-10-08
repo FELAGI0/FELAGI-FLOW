@@ -3,7 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-// React требует этот флаг, иначе act() ругается «environment is not configured»
+// React требует этот флаг, иначе act() ругается "environment is not configured"
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 /**
@@ -62,7 +62,7 @@ export function renderHook<T>(hook: () => T): RenderedHook<T> {
     };
 }
 
-/** Flush микротасок и таймеров: даёт эффектам/промисам «дозреть». */
+/** Flush микротасок и таймеров: даёт эффектам/промисам "дозреть". */
 export async function flush(): Promise<void> {
     await act(async () => {
         await Promise.resolve();

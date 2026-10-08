@@ -6,7 +6,7 @@ credential воркспейса (`credential_id` в параметрах), ра�
 
 Внешний вызов идёт через httpx; в тестах transport инжектится через
 `context["http_transport"]` (как в HTTP-узле). Сессия БД и workspace_id кладутся
-runner'ом в `context` — узлу они нужны, чтобы загрузить credential.
+runner'ом в `context` - узлу они нужны, чтобы загрузить credential.
 """
 
 import time
@@ -24,7 +24,7 @@ DEFAULT_TIMEOUT_SECONDS = 30.0
 
 
 class CredentialError(Exception):
-    """Credential не найден/удалён/непригоден — узел вернёт error, а не 500."""
+    """Credential не найден/удалён/непригоден - узел вернёт error, а не 500."""
 
 
 async def _load_token(session: AsyncSession, workspace_id: uuid.UUID, credential_id: str) -> str:
@@ -46,7 +46,7 @@ async def _load_token(session: AsyncSession, workspace_id: uuid.UUID, credential
     except CryptoError as exc:
         raise CredentialError(f"credential is unreadable: {exc}") from exc
 
-    # payload — JSON {"token": "..."}; терпимо, если это голая строка токена
+    # payload - JSON {"token": "..."}; терпимо, если это голая строка токена
     import json
 
     try:
@@ -99,7 +99,7 @@ async def handle_telegram(params: dict[str, Any], context: dict[str, Any]) -> di
     except httpx.TimeoutException:
         return {"error": f"telegram request timed out after {timeout}s"}
     except httpx.HTTPError as exc:
-        # в тексте ошибки может быть URL с токеном — вырезаем его
+        # в тексте ошибки может быть URL с токеном - вырезаем его
         return {"error": f"telegram request failed: {exc}".replace(token, "***")}
 
     elapsed_ms = int((time.perf_counter() - started) * 1000)

@@ -1,4 +1,4 @@
-"""Тесты резолвера выражений — чистая логика без БД и FastAPI."""
+"""Тесты резолвера выражений - чистая логика без БД и FastAPI."""
 
 import json
 
@@ -81,6 +81,6 @@ def test_resolve_params_recursively() -> None:
     }
     result = resolve_params(params, ctx)
     assert result["message"] == "Hello World, value=5"
-    # шаблон целиком-выражение сохраняет тип: min — число 10, а не строка "10"
+    # шаблон целиком-выражение сохраняет тип: min - число 10, а не строка "10"
     assert result["settings"]["threshold"] == 10
     assert result["tags"] == ["tag1", "live"]

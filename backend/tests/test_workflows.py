@@ -175,7 +175,7 @@ async def test_patch_status_active_rejected(client: httpx.AsyncClient) -> None:
     ws_id = await _ws_id(client, token)
     wf_id = (await _create_workflow(client, token, ws_id)).json()["id"]
 
-    # 'active' — только через publish, иначе Literal → 422
+    # 'active' - только через publish, иначе Literal -> 422
     resp = await client.patch(
         f"/api/workflows/{wf_id}", json={"status": "active"}, headers=_auth(token)
     )
@@ -284,7 +284,7 @@ async def test_publish_invalid_version_rejected(
     wf_id = (await _create_workflow(client, token, ws_id)).json()["id"]
     uid = await _user_id(client, token)
 
-    # версия в обход валидации роута — прямо через модель
+    # версия в обход валидации роута - прямо через модель
     session.add(
         WorkflowVersion(
             workflow_id=uuid.UUID(wf_id),
@@ -333,7 +333,7 @@ async def test_workspace_untouched_after_foreign_ops(
     b_ws = await _ws_id(client, b)
     b_wf = (await _create_workflow(client, b, b_ws, "B")).json()["id"]
 
-    # все попытки user_a против чужого workflow — отказ
+    # все попытки user_a против чужого workflow - отказ
     assert (await client.get(f"/api/workflows/{b_wf}", headers=_auth(a))).status_code == 403
     assert (
         await client.patch(f"/api/workflows/{b_wf}", json={"name": "X"}, headers=_auth(a))

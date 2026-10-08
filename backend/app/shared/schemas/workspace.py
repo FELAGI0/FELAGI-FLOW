@@ -11,7 +11,7 @@ class WorkspaceResponse(BaseModel):
     slug: str
     plan: str
     created_at: datetime
-    # роль текущего пользователя в этом workspace — чтобы UI знал, что показывать
+    # роль текущего пользователя в этом workspace - чтобы UI знал, что показывать
     current_user_role: str
 
 
@@ -28,5 +28,5 @@ class MemberResponse(BaseModel):
 
 
 class MemberRoleUpdate(BaseModel):
-    # owner через этот эндпоинт не назначается — Literal отсекает на 422
+    # owner через этот эндпоинт не назначается - Literal отсекает на 422
     role: Literal["admin", "member"]

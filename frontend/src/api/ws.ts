@@ -6,13 +6,13 @@ import type { ServerMessage } from "@/types/ws";
  * Обёртка над WebSocket live-логов execution (этап 5.B).
  *
  * Особенности:
- * - токен передаётся в query (`?token=…`): браузерный WebSocket не умеет
+ * - токен передаётся в query (`?token=...`): браузерный WebSocket не умеет
  *   кастомные заголовки, поэтому access-токен идёт параметром URL;
- * - при обычном сетевом разрыве — переподключение с экспоненциальной задержкой
- *   (1s, 2s, 4s …) с ограничением числа попыток (5.C.2): исчерпав их, клиент
- *   сообщает `onExhausted` — хук переключается на polling;
+ * - при обычном сетевом разрыве - переподключение с экспоненциальной задержкой
+ *   (1s, 2s, 4s ...) с ограничением числа попыток (5.C.2): исчерпав их, клиент
+ *   сообщает `onExhausted` - хук переключается на polling;
  * - после каждого переподключения сервер снова присылает `snapshot` со всеми
- *   шагами, поэтому клиент не обязан помнить состояние — он просто заменяет его.
+ *   шагами, поэтому клиент не обязан помнить состояние - он просто заменяет его.
  */
 
 /** Максимум попыток автопереподключения до перехода в fallback (polling). */
@@ -41,13 +41,13 @@ export interface ExecutionLogsCallbacks {
     onSteps?: (message: Extract<ServerMessage, { type: "steps" }>) => void;
     /** Запуск завершился; соединение будет закрыто сервером с кодом 1000. */
     onFinished?: (message: Extract<ServerMessage, { type: "finished" }>) => void;
-    /** Планируется переподключение; аргумент — номер попытки (1-based). */
+    /** Планируется переподключение; аргумент - номер попытки (1-based). */
     onReconnecting?: (attempt: number) => void;
-    /** Все попытки исчерпаны — дальше нужен fallback (polling). */
+    /** Все попытки исчерпаны - дальше нужен fallback (polling). */
     onExhausted?: () => void;
-    /** Соединение закрыто; аргумент — код закрытия. */
+    /** Соединение закрыто; аргумент - код закрытия. */
     onClose?: (code: number) => void;
-    /** Ошибка соединения или прикладное закрытие; аргумент — причина. */
+    /** Ошибка соединения или прикладное закрытие; аргумент - причина. */
     onError?: (error: string) => void;
 }
 
@@ -65,7 +65,7 @@ export interface ExecutionLogsHandle {
 function wsUrl(executionId: string, token: string): string {
     const params = new URLSearchParams({ token });
     // VITE_API_URL задан (прод): WS идёт на тот же хост, что и REST, а схема
-    // выводится из http(s) → ws(s). Без него — на origin текущей страницы.
+    // выводится из http(s) -> ws(s). Без него - на origin текущей страницы.
     const base = API_BASE || window.location.origin;
     const url = new URL(`/ws/executions/${executionId}`, base);
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
@@ -133,14 +133,14 @@ export function connectExecutionLogs(
 
         socket.onclose = (event: CloseEvent) => {
             socket = null;
-            // о закрытии сообщаем всегда, но решение о реконнекте — ниже
+            // о закрытии сообщаем всегда, но решение о реконнекте - ниже
             callbacks.onClose?.(event.code);
             if (closed) return;
             if (isFatalCloseCode(event.code)) {
                 callbacks.onError?.(`Соединение закрыто (код ${event.code})`);
                 return;
             }
-            // 1000 — сервер завершил подписку (finished); переподключаться не нужно
+            // 1000 - сервер завершил подписку (finished); переподключаться не нужно
             if (event.code === 1000) return;
             if (attempt >= maxAttempts) {
                 // попытки исчерпаны: сигнал перейти на polling
@@ -152,7 +152,7 @@ export function connectExecutionLogs(
         };
 
         socket.onerror = () => {
-            // деталей в onerror нет — сообщим на onclose, который придёт следом
+            // деталей в onerror нет - сообщим на onclose, который придёт следом
         };
     }
 

@@ -22,7 +22,7 @@ const STATUS_CLASSES: Record<string, string> = {
     paused: "border-amber-300 bg-amber-50 text-amber-900",
 };
 
-/** Номер опубликованной версии: GET /versions + published_version_id → номер. */
+/** Номер опубликованной версии: GET /versions + published_version_id -> номер. */
 function usePublishedVersion(workflow: Workflow | null) {
     return useQuery({
         queryKey: ["versions", workflow?.id],

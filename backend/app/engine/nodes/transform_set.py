@@ -1,6 +1,6 @@
 """Set: формирует объект из перечисленных полей.
 
-params.fields — список {name, value}. Значение резолвится runner'ом из
+params.fields - список {name, value}. Значение резолвится runner'ом из
 context ДО вызова handler'а (см. runner._resolve_params), поэтому здесь
 work уже с готовыми значениями.
 """

@@ -20,7 +20,7 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # server_default обязателен: без него add_column на непустой таблице падает,
     # т.к. существующие строки не получают значение для NOT NULL. Историческим
-    # шагам проставляется 1 — до 4.C повторов узла не существовало.
+    # шагам проставляется 1 - до 4.C повторов узла не существовало.
     op.add_column(
         'execution_steps',
         sa.Column('attempt', sa.Integer(), nullable=False, server_default='1'),

@@ -110,7 +110,7 @@ async def test_refresh_rotates_cookie(client: httpx.AsyncClient) -> None:
     assert resp.json()["access_token"]
     new_refresh = resp.cookies["refresh_token"]
     assert new_refresh
-    assert new_refresh != old_refresh  # jti случайный → ротация видна
+    assert new_refresh != old_refresh  # jti случайный -> ротация видна
 
 
 async def test_refresh_without_cookie(client: httpx.AsyncClient) -> None:

@@ -6,10 +6,10 @@ from pydantic import BaseModel, Field
 
 
 class CredentialCreate(BaseModel):
-    """Создание credential. `payload` — секрет (для Telegram: {"token": "..."}).
+    """Создание credential. `payload` - секрет (для Telegram: {"token": "..."}).
 
-    `service` — Literal на текущий единственный сервис (ПРАВКА 12, Telegram-only);
-    расширение списка — по мере добавления сервисов.
+    `service` - Literal на текущий единственный сервис (ПРАВКА 12, Telegram-only);
+    расширение списка - по мере добавления сервисов.
     """
 
     service: Literal["telegram"]

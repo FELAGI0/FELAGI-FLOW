@@ -1,8 +1,8 @@
 """Валидация графа воркфлоу перед сохранением версии и публикацией.
 
-Возвращает список человекочитаемых ошибок; пустой список — граф корректен.
+Возвращает список человекочитаемых ошибок; пустой список - граф корректен.
 mvp-ограничения (DESIGN.md §4): ровно один триггер, ветвление только через If,
-merge отсутствует — ветки If не сходятся.
+merge отсутствует - ветки If не сходятся.
 """
 
 from collections import defaultdict, deque
@@ -107,10 +107,10 @@ def validate_graph(graph: Graph, node_schemas: dict[str, NodeSchema]) -> list[st
         except ValidationError as exc:
             for detail in exc.errors():
                 location = ".".join(str(part) for part in detail["loc"]) or "(params)"
-                errors.append(f"node '{node.id}': invalid parameter '{location}' — {detail['msg']}")
+                errors.append(f"node '{node.id}': invalid parameter '{location}' - {detail['msg']}")
 
     # cron/webhook: схема проверяет типы, но не семантику (валидность выражения и
-    # зоны, непустоту списка методов) — это отдельные проверки ниже. Выполняются
+    # зоны, непустоту списка методов) - это отдельные проверки ниже. Выполняются
     # только если базовые типы прошли, иначе params.get вернул бы не то, что ждём
     for node in nodes:
         if node.type == CRON_NODE_TYPE:
@@ -138,7 +138,7 @@ def _check_cron_node(node: Node) -> list[str]:
 
 
 def _check_webhook_node(node: Node) -> list[str]:
-    """methods — непустой список из GET/POST."""
+    """methods - непустой список из GET/POST."""
     errors: list[str] = []
     methods = node.params.get("methods")
     if methods is None:

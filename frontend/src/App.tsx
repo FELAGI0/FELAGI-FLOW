@@ -19,7 +19,7 @@ const queryClient = new QueryClient({
 });
 
 export function App() {
-    // применение темы к documentElement — один раз на всё приложение (UI.1)
+    // применение темы к documentElement - один раз на всё приложение (UI.1)
     useTheme();
 
     return (

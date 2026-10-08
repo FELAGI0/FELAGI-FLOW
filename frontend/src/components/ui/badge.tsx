@@ -10,19 +10,19 @@ const badgeVariants = cva(
             variant: {
                 default: "border-transparent bg-primary text-primary-foreground",
                 outline: "border-border text-foreground",
-                // серый — нейтральное/ожидание
+                // серый - нейтральное/ожидание
                 gray: "border-slate-300 bg-slate-50 text-slate-700",
-                // синий — выполняется
+                // синий - выполняется
                 blue: "border-blue-300 bg-blue-50 text-blue-900",
-                // зелёный — успех
+                // зелёный - успех
                 green: "border-emerald-300 bg-emerald-50 text-emerald-900",
-                // красный — ошибка
+                // красный - ошибка
                 red: "border-red-300 bg-red-50 text-red-900",
-                // тёмно-красный — dead (исчерпаны попытки)
+                // тёмно-красный - dead (исчерпаны попытки)
                 darkred: "border-red-800 bg-red-800 text-red-50",
-                // оранжевый — отменено
+                // оранжевый - отменено
                 orange: "border-orange-300 bg-orange-50 text-orange-900",
-                // янтарный — предупреждение/пауза
+                // янтарный - предупреждение/пауза
                 amber: "border-amber-300 bg-amber-50 text-amber-900",
             },
         },

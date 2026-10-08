@@ -1,7 +1,7 @@
 import { useAuthStore } from "@/stores/authStore";
 
 /**
- * База API. Пусто по умолчанию — тогда запросы идут на тот же origin (локально
+ * База API. Пусто по умолчанию - тогда запросы идут на тот же origin (локально
  * фронт и api отдаёт один Caddy). В проде фронт (Vercel) и api (Render) живут
  * на разных доменах, поэтому задаётся VITE_API_URL, напр. https://api.example.com.
  * Слэш на конце срезаем, чтобы `${API_BASE}${path}` не давал `//`.
@@ -91,7 +91,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     let response = await rawRequest(path, options);
 
     if (response.status === 401) {
-        // одна повторная попытка после refresh; если не вышло — сессия кончилась
+        // одна повторная попытка после refresh; если не вышло - сессия кончилась
         const refreshed = await refreshAccessToken();
         if (refreshed) {
             response = await rawRequest(path, options);
@@ -109,7 +109,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     return body as T;
 }
 
-/** Восстановление сессии при старте приложения: refresh-cookie → access-токен. */
+/** Восстановление сессии при старте приложения: refresh-cookie -> access-токен. */
 export async function bootstrapSession(): Promise<boolean> {
     if (useAuthStore.getState().accessToken) return true;
     return refreshAccessToken();

@@ -2,10 +2,10 @@ import os
 from collections.abc import AsyncIterator
 from typing import Any
 
-# jwt_secret_key обязателен и без дефолта — задать до любого импорта app.*
+# jwt_secret_key обязателен и без дефолта - задать до любого импорта app.*
 os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-not-for-production")
 # Fernet-ключ для credentials: детерминированный, только для тестов (шифрование
-# секретов работает и на нём; в проде — свой ключ из окружения)
+# секретов работает и на нём; в проде - свой ключ из окружения)
 os.environ.setdefault("FERNET_KEY", "HUVGbfErpGskT-QOr26jULL4xyzjAYDbHLtRGGsc2ss=")
 
 import httpx
@@ -37,7 +37,7 @@ async def session() -> AsyncIterator[AsyncSession]:
 
         @event.listens_for(engine.sync_engine, "connect")
         def _fk_on(dbapi_connection: Any, _record: Any) -> None:
-            # в SQLite проверка FK по умолчанию выключена — без неё ondelete=CASCADE не работает
+            # в SQLite проверка FK по умолчанию выключена - без неё ondelete=CASCADE не работает
             cur = dbapi_connection.cursor()
             cur.execute("PRAGMA foreign_keys=ON")
             cur.close()

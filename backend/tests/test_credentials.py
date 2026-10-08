@@ -1,8 +1,8 @@
 """Credentials + узел action_telegram (6.A).
 
-Часть — чистые тесты крипто и роутов (SQLite ок), часть помечена postgres:
+Часть - чистые тесты крипто и роутов (SQLite ок), часть помечена postgres:
 нужны реальные FK/транзакции и вызов узла с сессией БД. Внешний HTTP в узле
-подменяется httpx.MockTransport через context — реальной сети нет.
+подменяется httpx.MockTransport через context - реальной сети нет.
 """
 
 import json
@@ -51,7 +51,7 @@ def test_encrypt_decrypt_roundtrip() -> None:
 
 def test_decrypt_wrong_key_raises(monkeypatch: pytest.MonkeyPatch) -> None:
     ciphertext = encrypt("secret")
-    # другой валидный Fernet-ключ → InvalidToken → наша CryptoError, not трейсбек
+    # другой валидный Fernet-ключ -> InvalidToken -> наша CryptoError, not трейсбек
     monkeypatch.setattr(config.settings, "fernet_key", Fernet.generate_key().decode())
     with pytest.raises(CryptoError):
         decrypt(ciphertext)
@@ -130,7 +130,7 @@ async def test_delete_credential_is_soft(client: httpx.AsyncClient, session: Asy
     listed = await client.get(f"/api/workspaces/{ws_id}/credentials", headers=_auth(token))
     assert listed.json()["items"] == []
 
-    # но строка физически осталась — soft-delete
+    # но строка физически осталась - soft-delete
     stored = await session.get(Credential, uuid.UUID(cred_id))
     assert stored is not None
     assert stored.deleted_at is not None
@@ -152,11 +152,11 @@ async def test_member_cannot_create_credential(
     session.add(WorkspaceMember(workspace_id=ws_uuid, user_id=member.id, role="member"))
     await session.commit()
 
-    # member логинится и пытается создать credential → 403
+    # member логинится и пытается создать credential -> 403
     login = await client.post(
         "/api/auth/login", json={"email": "credmember@example.com", "password": PASSWORD}
     )
-    assert login.status_code == 401  # пароль не тот — зададим явно
+    assert login.status_code == 401  # пароль не тот - зададим явно
     from app.shared.security import hash_password
 
     member.password_hash = hash_password(PASSWORD)
@@ -241,7 +241,7 @@ async def test_telegram_sends_message(session: AsyncSession) -> None:
     assert result["message_id"] == 42
     assert result["chat_id"] == 777
     assert result["date"] == 1700000000
-    # токен ушёл в URL, но не в тело; chat_id/text — в тело
+    # токен ушёл в URL, но не в тело; chat_id/text - в тело
     assert "123:SECRET" in str(captured["url"])
     assert captured["body"] == {"chat_id": "777", "text": "hello"}
 
@@ -278,7 +278,7 @@ async def test_telegram_deleted_credential_returns_clear_error(session: AsyncSes
         {"credential_id": str(credential.id), "chat_id": "1", "text": "x"},
         {"session": session, "workspace_id": workspace.id, "http_transport": transport},
     )
-    # внятная ошибка «credential deleted», не 500/трейсбек
+    # внятная ошибка "credential deleted", не 500/трейсбек
     assert result.get("error") == "credential deleted"
 
 

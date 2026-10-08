@@ -1,6 +1,6 @@
 # Felagi Flow
 
-> **A self-hosted workflow automation platform with AI nodes — a FastAPI, async SQLAlchemy, and PostgreSQL backend with a React and TypeScript frontend.**
+> A self-hosted workflow automation platform with AI nodes: a FastAPI, async SQLAlchemy, and PostgreSQL backend with a React and TypeScript frontend.
 
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.141-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -10,12 +10,12 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Backend tests](https://img.shields.io/badge/backend_tests-258%20passed-success)](#-testing)
-[![Frontend tests](https://img.shields.io/badge/frontend_tests-57%20passed-success)](#-frontend-testing)
-[![Tests](https://img.shields.io/badge/tests-315%20passed-success)](#-testing)
+[![Backend tests](https://img.shields.io/badge/backend_tests-258%20passed-success)](#testing)
+[![Frontend tests](https://img.shields.io/badge/frontend_tests-57%20passed-success)](#frontend-testing)
+[![Tests](https://img.shields.io/badge/tests-315%20passed-success)](#testing)
 [![Live Demo](https://img.shields.io/badge/demo-online-brightgreen)](https://felagi-flow.vercel.app)
 
-## 🔗 Live Demo
+## Live Demo
 
 | Service | URL |
 | --- | --- |
@@ -24,38 +24,38 @@
 | **Swagger UI** | <https://felagi-flow-api.onrender.com/docs> |
 | **Health check** | <https://felagi-flow-api.onrender.com/healthz> |
 
-> **Note:** the backend runs on Render's free tier. A keep-alive ping ([cron-job.org](https://cron-job.org/)) hits `/healthz` every 5 minutes to keep it warm, but the first request after a long idle period can still take 30–60 seconds. Database is [Neon](https://neon.tech/) serverless PostgreSQL.
+> **Note:** the backend runs on Render's free tier. A keep-alive ping ([cron-job.org](https://cron-job.org/)) hits `/healthz` every 5 minutes to keep it warm, but the first request after a long idle period can still take 30-60 seconds. Database is [Neon](https://neon.tech/) serverless PostgreSQL.
 
-## ✨ Features
+## Features
 
-- **Visual workflow editor** — a drag-and-drop graph canvas built on [React Flow](https://reactflow.dev/), with 8 node types.
-- **Triggers** — manual, cron schedule, and public webhook.
-- **Actions** — HTTP Request, LLM (OpenAI-compatible), Set, If, and Debug.
-- **PostgreSQL-backed queue** — `executions` is both the journal and the work queue, claimed with `FOR UPDATE SKIP LOCKED`, ownership extended by heartbeats, and stale locks reclaimed.
-- **Per-node retry** — `max_retries` with fixed or exponential backoff.
-- **Live logs via WebSocket** — `LISTEN/NOTIFY` fan-out pushes each step to the browser as it completes.
-- **Multi-tenancy** — workspaces with `owner`/`admin`/`member` roles and email invitations.
-- **Versioning** — save a draft version, publish it, and browse version history.
-- **JWT auth** — short-lived access token in memory plus a rotating refresh token in an httpOnly cookie.
-- **Command history** — run history with status filters and keyset pagination.
-- **Tested on both sides** — 258 backend tests and 57 frontend tests, 315 in total.
+- **Visual workflow editor**: a drag-and-drop graph canvas built on [React Flow](https://reactflow.dev/), with 8 node types.
+- **Triggers**: manual, cron schedule, and public webhook.
+- **Actions**: HTTP Request, LLM (OpenAI-compatible), Set, If, and Debug.
+- **PostgreSQL-backed queue**: `executions` is both the journal and the work queue, claimed with `FOR UPDATE SKIP LOCKED`, ownership extended by heartbeats, and stale locks reclaimed.
+- **Per-node retry**: `max_retries` with fixed or exponential backoff.
+- **Live logs via WebSocket**: `LISTEN/NOTIFY` fan-out pushes each step to the browser as it completes.
+- **Multi-tenancy**: workspaces with `owner`/`admin`/`member` roles and email invitations.
+- **Versioning**: save a draft version, publish it, and browse version history.
+- **JWT auth**: short-lived access token in memory plus a rotating refresh token in an httpOnly cookie.
+- **Run history** with status filters and keyset pagination.
+- Tested on both sides: 258 backend tests and 57 frontend tests, 315 in total.
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TD
     Client[Browser SPA] --> Edge[Caddy / Vercel + Render]
     Edge --> API[FastAPI: REST + WebSocket]
-    API --> DB[(PostgreSQL 16 · Neon)]
+    API --> DB[(PostgreSQL 16 + Neon)]
     Worker[Worker: claim and run] --> DB
     Scheduler[Scheduler: cron tick] --> DB
     Worker --> External[External APIs: LLM, HTTP, Webhooks]
     DB -.->|LISTEN / NOTIFY exec_log| API
 ```
 
-The backend is split by process role: the **API** serves REST and WebSocket traffic, the **worker** claims and executes runs from the queue, and the **scheduler** enqueues runs from cron schedules. All three share one PostgreSQL database and coordinate through it — there is no separate message broker.
+The backend is split by process role: the **API** serves REST and WebSocket traffic, the **worker** claims and executes runs from the queue, and the **scheduler** enqueues runs from cron schedules. All three share one PostgreSQL database and coordinate through it. There is no separate message broker.
 
-## 🔄 Request Flow
+## Request Flow
 
 A manual run from a published workflow:
 
@@ -82,7 +82,7 @@ sequenceDiagram
     A-->>C: WebSocket finished -> close(1000)
 ```
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Area | Technology |
 | --- | --- |
@@ -100,12 +100,12 @@ sequenceDiagram
 | Testing | [pytest](https://docs.pytest.org/), [pytest-asyncio](https://pytest-asyncio.readthedocs.io/), [httpx](https://www.python-httpx.org/) |
 | Tooling | [Ruff](https://docs.astral.sh/ruff/), [mypy](https://www.mypy-lang.org/) |
 | Local infrastructure | [Docker](https://www.docker.com/) and Docker Compose |
-| Hosting (frontend) | [Vercel](https://vercel.com/) — <https://felagi-flow.vercel.app> |
-| Hosting (backend) | [Render](https://render.com/) — <https://felagi-flow-api.onrender.com> |
+| Hosting (frontend) | [Vercel](https://vercel.com/): <https://felagi-flow.vercel.app> |
+| Hosting (backend) | [Render](https://render.com/): <https://felagi-flow-api.onrender.com> |
 | Database (production) | [Neon](https://neon.tech/) serverless PostgreSQL |
 | Keep-alive | [cron-job.org](https://cron-job.org/) pings `/healthz` every 5 minutes |
 
-## 💻 Frontend
+## Frontend
 
 A single-page application that consumes the API: sign in, browse workspaces, edit workflows on a graph canvas, and watch runs execute live.
 
@@ -128,7 +128,7 @@ A single-page application that consumes the API: sign in, browse workspaces, edi
 
 ### Screens
 
-> Screenshots are not committed yet — drop them into [`docs/screenshots/`](docs/screenshots) and they will render below. **TODO.**
+> Screenshots are not committed yet. Drop them into [`docs/screenshots/`](docs/screenshots) and they will render below. **TODO.**
 
 | Workflow editor | Live execution logs |
 | --- | --- |
@@ -144,7 +144,7 @@ npm run typecheck   # tsc --noEmit
 npm run test        # vitest run
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 backend/
@@ -183,7 +183,7 @@ docs/                        # architecture, api, development, deploy
 docker/                      # Postgres init scripts
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Docker (local)
 
@@ -217,7 +217,7 @@ docker/                      # Postgres init scripts
 
 The stack is deployed as Vercel (frontend) + Render (API) + Neon (PostgreSQL). See [`docs/deploy.md`](docs/deploy.md) for the full walkthrough.
 
-## 📚 API Endpoints
+## API Endpoints
 
 ### System
 
@@ -290,7 +290,7 @@ The stack is deployed as Vercel (frontend) + Render (API) + Neon (PostgreSQL). S
 
 Interactive API docs are served at `/docs` (Swagger UI) and `/redoc`.
 
-## 🔐 Auth & Authorization
+## Auth & Authorization
 
 ### JWT tokens
 
@@ -307,13 +307,13 @@ Access tokens are signed JWTs sent as `Authorization: Bearer <token>`. Refresh t
 | --- | --- | --- | --- | --- |
 | `owner` | Update, delete | Change roles, remove | Create, revoke | Full CRUD, publish |
 | `admin` | Update | Remove (non-owner) | Create, revoke | Full CRUD, publish |
-| `member` | Read | Read | — | Create, edit, run |
+| `member` | Read | Read | - | Create, edit, run |
 
 ### Multi-tenant isolation
 
-Every resource is scoped to a workspace. Endpoints first resolve the object, then verify the caller's membership in its workspace — a non-member receives `403`, a missing object `404`. Public webhooks are the one exception: access is by a secret route token instead of JWT.
+Every resource is scoped to a workspace. Endpoints first resolve the object, then verify the caller's membership in its workspace. A non-member receives `403`, a missing object `404`. Public webhooks are the one exception: access is by a secret route token instead of JWT.
 
-## 🧪 Testing
+## Testing
 
 ```text
 cd backend
@@ -327,7 +327,7 @@ uv run python -m pytest tests/ -q
 
 Some tests are marked `@pytest.mark.postgres` (they need real `SKIP LOCKED`, `LISTEN/NOTIFY`, and advisory locks) and are skipped without `TEST_DATABASE_URL`. The backend suite has **258 passing tests**.
 
-The frontend adds **57 passing tests** (see [Frontend testing](#-frontend-testing)), bringing the total to **315 tests**.
+The frontend adds **57 passing tests** (see [Frontend testing](#frontend-testing)), bringing the total to **315 tests**.
 
 Additional quality checks:
 
@@ -345,7 +345,7 @@ npx tsc --noEmit
 npx vitest run
 ```
 
-<a id="-frontend-testing"></a>
+<a id="frontend-testing"></a>
 
 ### Frontend testing
 
@@ -357,14 +357,14 @@ npx vitest run
 | Suite | Coverage |
 | --- | --- |
 | API client | Request URLs, methods, and query parameters |
-| Hook `useExecutionLogs` | WebSocket snapshot/steps/finished, reconnection → fallback, metadata refresh after finish |
+| Hook `useExecutionLogs` | WebSocket snapshot/steps/finished, reconnection to fallback, metadata refresh after finish |
 | Realtime URL | `ws://` vs `wss://` derivation from `VITE_API_URL` |
 | Stores | Editor state transitions |
 | Utilities | Date/time and formatting helpers |
 
 The frontend suite has **57 passing tests** across 6 files.
 
-## 🧠 Design Decisions
+## Design Decisions
 
 ### PostgreSQL as the queue (no broker)
 
@@ -372,7 +372,7 @@ The frontend suite has **57 passing tests** across 6 files.
 
 ### `NOTIFY` before `COMMIT`, not after
 
-Postgres delivers `NOTIFY` only at commit and coalesces identical payloads within a single transaction. Since our payload *is* the `execution_id`, sending `pg_notify` after commit would collapse a run's step notifications into one delivery. It is emitted inside the step transaction, right before commit.
+Postgres delivers `NOTIFY` only at commit and coalesces identical payloads within a single transaction. Since our payload *is* the `execution_id`, sending `pg_notify` after commit would collapse the run's step notifications into one delivery. It is emitted inside the step transaction, right before commit.
 
 ### A `sequence` column on `execution_steps`
 
@@ -390,49 +390,49 @@ The LLM node speaks the OpenAI-compatible protocol against a configurable `LLM_B
 
 Sensitive per-workspace values are encrypted at rest with `cryptography`'s Fernet (symmetric AEAD), keyed by `FERNET_KEY`.
 
-## 🗺️ Roadmap
+## Roadmap
 
-- [x] **Stage 1 — Skeleton** (FastAPI, React, Docker, CI)
-- [x] **Stage 2 — Auth + multi-tenancy**
-- [x] **Stage 3 — Workflows + visual editor**
-- [x] **Stage 4 — Execution engine + retry**
-- [x] **Stage 5 — Cron + webhook + WebSocket live logs**
-- [x] **Stage 6 — LLM node** (OpenAI-compatible API)
-- [x] **Stage 7 — Deploy** (Vercel + Render + Neon)
-- [ ] **Stage 8 — OAuth + Gmail/Notion/Sheets/Discord nodes**
-- [ ] **Stage 9 — Dead-letter queue + replay**
-- [ ] **Stage 10 — Billing + RLS**
+- [x] Stage 1: Skeleton (FastAPI, React, Docker, CI)
+- [x] Stage 2: Auth + multi-tenancy
+- [x] Stage 3: Workflows + visual editor
+- [x] Stage 4: Execution engine + retry
+- [x] Stage 5: Cron + webhook + WebSocket live logs
+- [x] Stage 6: LLM node (OpenAI-compatible API)
+- [x] Stage 7: Deploy (Vercel + Render + Neon)
+- [ ] Stage 8: OAuth + Gmail/Notion/Sheets/Discord nodes
+- [ ] Stage 9: Dead-letter queue + replay
+- [ ] Stage 10: Billing + RLS
 
-## 🌍 Environment Variables
+## Environment Variables
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | Yes | — | Async PostgreSQL URL (`postgresql+asyncpg://…`) |
-| `JWT_SECRET_KEY` | Yes | — | JWT signing key; use at least 32 characters |
-| `FERNET_KEY` | Yes | — | Fernet key for encrypting stored credentials |
-| `LLM_API_KEY` | No | — | API key for the OpenAI-compatible LLM endpoint |
+| `DATABASE_URL` | Yes | - | Async PostgreSQL URL (`postgresql+asyncpg://...`) |
+| `JWT_SECRET_KEY` | Yes | - | JWT signing key; use at least 32 characters |
+| `FERNET_KEY` | Yes | - | Fernet key for encrypting stored credentials |
+| `LLM_API_KEY` | No | - | API key for the OpenAI-compatible LLM endpoint |
 | `LLM_BASE_URL` | No | `http://185.221.214.224:4100/v1` | Base URL of the LLM endpoint |
 | `LLM_MODELS` | No | `[]` | JSON array of allowed models; empty allows any |
 | `FRONTEND_URL` | No | `http://localhost` | Base URL for invite links |
 | `CORS_ORIGINS` | No | `[]` | JSON array of allowed frontend origins |
 | `COOKIE_SECURE` | No | `false` | Set `true` behind HTTPS (required for `COOKIE_SAMESITE=none`) |
-| `COOKIE_SAMESITE` | No | `lax` | `lax` for same-site, `none` for cross-site (Vercel → Render) |
+| `COOKIE_SAMESITE` | No | `lax` | `lax` for same-site, `none` for cross-site (Vercel to Render) |
 | `DB_SSL_REQUIRE` | No | `false` | Force TLS to Postgres; auto-enabled for `*.neon.tech` |
 | `LOG_LEVEL` | No | `INFO` | Application log level |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | No | `15` | Access token lifetime |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | No | `30` | Refresh token lifetime |
-| `POSTGRES_*` | No | — | `USER`/`PASSWORD`/`DB`/`PORT` for the local Docker database |
+| `POSTGRES_*` | No | - | `USER`/`PASSWORD`/`DB`/`PORT` for the local Docker database |
 
 The LLM node degrades gracefully: without `LLM_API_KEY` it returns a step error, and the rest of the platform keeps working.
 
-## 📝 License
+## License
 
 Distributed under the MIT License.
 
-## 📧 Author
+## Author
 
 [FELAGI0](https://github.com/FELAGI0)
 
 ---
 
-Made with ❤️ using Python, FastAPI, React, and PostgreSQL
+Made with Python, FastAPI, React, and PostgreSQL

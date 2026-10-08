@@ -13,7 +13,7 @@ export function listExecutions(
     wsId: string,
     params: ListExecutionsParams = {},
 ): Promise<ExecutionListResponse> {
-    // пустые/undefined параметры не шлём: «status=» бэкенд поймёт как фильтр по ""
+    // пустые/undefined параметры не шлём: "status=" бэкенд поймёт как фильтр по ""
     const query = new URLSearchParams();
     if (params.workflow_id) query.set("workflow_id", params.workflow_id);
     if (params.status) query.set("status", params.status);

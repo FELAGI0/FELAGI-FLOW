@@ -3,7 +3,7 @@
 Причина появления: created_at = func.now() = время транзакции, у всех шагов
 одного запуска совпадает, поэтому сортировка по нему произвольна. Введён
 sequence (номер шага в запуске, с 1); runner коммитит каждый шаг отдельной
-транзакцией и шлёт NOTIFY до коммита — live-логи видят шаги по мере выполнения.
+транзакцией и шлёт NOTIFY до коммита - live-логи видят шаги по мере выполнения.
 
 Только Postgres: нужны pg_notify/LISTEN, SKIP LOCKED и отдельные соединения.
 """
@@ -55,7 +55,7 @@ def _async_url() -> str:
 
 
 def _dsn() -> str:
-    """DSN без драйверного суффикса — для прямого подключения asyncpg (LISTEN)."""
+    """DSN без драйверного суффикса - для прямого подключения asyncpg (LISTEN)."""
     return _async_url().replace("+asyncpg", "")
 
 
@@ -64,7 +64,7 @@ def _engine() -> AsyncEngine:
 
 
 def _linear_graph() -> dict[str, object]:
-    """t → s → d: детерминированный топологический порядок."""
+    """t -> s -> d: детерминированный топологический порядок."""
     return {
         "nodes": [
             {"id": "t", "type": "trigger_manual", "params": {}, "position": {}},
@@ -144,7 +144,7 @@ async def _steps_ordered(session: AsyncSession, execution_id: uuid.UUID) -> list
 async def test_steps_numbered_sequentially_in_topological_order(
     session: AsyncSession,
 ) -> None:
-    """sequence = 1,2,3... и совпадает с порядком выполнения trigger→set→debug."""
+    """sequence = 1,2,3... и совпадает с порядком выполнения trigger->set->debug."""
     workflow_id, version_id = await _fixture_workflow(session, _linear_graph())
     await enqueue(session, workflow_id, version_id)
     await session.commit()
@@ -171,7 +171,7 @@ async def test_retry_attempts_get_distinct_sequences(
     async def failing_debug(
         node_type: str, params: dict[str, Any], context: dict[str, Any]
     ) -> dict[str, Any]:
-        # узел debug падает всегда → три попытки при max_retries=2
+        # узел debug падает всегда -> три попытки при max_retries=2
         if node_type == "debug":
             calls["count"] += 1
             return {"error": f"boom {calls['count']}"}
@@ -198,7 +198,7 @@ async def test_retry_attempts_get_distinct_sequences(
     workflow_id, version_id = await _fixture_workflow(session, graph)
     await enqueue(session, workflow_id, version_id)
     await session.commit()
-    # узел падает всегда → run_execution бросает; шаги при этом уже закоммичены
+    # узел падает всегда -> run_execution бросает; шаги при этом уже закоммичены
     # (коммит на шаг), поэтому ловим ошибку и проверяем sequence
     workflows_execution = await claim_next(session, "w1")
     assert workflows_execution is not None
@@ -210,7 +210,7 @@ async def test_retry_attempts_get_distinct_sequences(
     execution_id = workflows_execution.id
     steps = await _steps_ordered(session, execution_id)
 
-    # t (succeeded) + d × 3 попытки = 4 шага, sequence 1..4 без повторов
+    # t (succeeded) + d x 3 попытки = 4 шага, sequence 1..4 без повторов
     assert [step.sequence for step in steps] == [1, 2, 3, 4]
     assert len({step.sequence for step in steps}) == len(steps)
 
@@ -229,7 +229,7 @@ async def test_rerun_after_reclaim_does_not_duplicate_sequence(
     version = await session.get(WorkflowVersion, version_id)
     assert version is not None
 
-    # первый прогон «падает» вручную: пишем один шаг и как будто воркер умер.
+    # первый прогон "падает" вручную: пишем один шаг и как будто воркер умер.
     # _record_step коммитит сам, поэтому шаг останется в БД.
     from app.engine.runner import StepCounter, _record_step
 
@@ -319,7 +319,7 @@ def ws_client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
 
 
 def _seed_execution(*, status: str = "running") -> dict[str, str]:
-    """user → ws → workflow → version + execution. Возвращает ids/token."""
+    """user -> ws -> workflow -> version + execution. Возвращает ids/token."""
 
     async def _run() -> dict[str, str]:
         engine = _engine()
@@ -369,7 +369,7 @@ def _seed_execution(*, status: str = "running") -> dict[str, str]:
 
 
 def _insert_steps(execution_id: str, rows: list[tuple[str, int]]) -> None:
-    """Прямой INSERT шагов с заданными (node_id, sequence) — для проверки сортировки."""
+    """Прямой INSERT шагов с заданными (node_id, sequence) - для проверки сортировки."""
 
     async def _run() -> None:
         engine = _engine()
@@ -399,7 +399,7 @@ def _insert_steps(execution_id: str, rows: list[tuple[str, int]]) -> None:
 def test_ws_snapshot_returns_steps_in_sequence_order(ws_client: TestClient) -> None:
     """Snapshot отдаёт шаги по sequence, а не по node_id/created_at."""
     data = _seed_execution()
-    # sequence намеренно расходится с node_id: z=1, a=2 → ожидаем [z, a]
+    # sequence намеренно расходится с node_id: z=1, a=2 -> ожидаем [z, a]
     _insert_steps(data["execution_id"], [("z", 1), ("a", 2)])
 
     with ws_client.websocket_connect(
@@ -415,10 +415,10 @@ def test_ws_and_rest_agree_on_step_order(ws_client: TestClient) -> None:
     """Один и тот же запуск: WS-snapshot и REST отдают одинаковый порядок.
 
     node_id подобраны так, чтобы порядок по sequence отличался от порядка по
-    node_id — иначе тест не поймал бы рассинхрон двух сортировок.
+    node_id - иначе тест не поймал бы рассинхрон двух сортировок.
     """
     data = _seed_execution()
-    # по sequence: [z(1), a(2), m(3)]; по node_id: [a, m, z] — порядки разные
+    # по sequence: [z(1), a(2), m(3)]; по node_id: [a, m, z] - порядки разные
     _insert_steps(data["execution_id"], [("z", 1), ("a", 2), ("m", 3)])
 
     with ws_client.websocket_connect(
@@ -440,13 +440,13 @@ def test_ws_and_rest_agree_on_step_order(ws_client: TestClient) -> None:
 async def test_each_step_commit_delivers_separate_notification(
     session: AsyncSession, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Коммит на шаг → отдельные NOTIFY, а не один схлопнутый батч.
+    """Коммит на шаг -> отдельные NOTIFY, а не один схлопнутый батч.
 
     Доказательство коммита на шаг: три узла дают три отдельные доставки
     `exec_log`. Если бы шаги коммитились одной транзакцией в конце (как было до
     5.B-fix), Postgres схлопнул бы одинаковые payload'ы в одну доставку.
 
-    Замедляем узлы, чтобы коммиты шли с разрывом во времени, — тогда доставки
+    Замедляем узлы, чтобы коммиты шли с разрывом во времени, - тогда доставки
     гарантированно раздельные.
     """
     import asyncpg
@@ -491,5 +491,5 @@ async def test_each_step_commit_delivers_separate_notification(
         await listener.remove_listener("exec_log", _record)
         await listener.close()
 
-    # три шага → три отдельных уведомления (не один батч)
+    # три шага -> три отдельных уведомления (не один батч)
     assert received == [str(execution_id)] * 3, received

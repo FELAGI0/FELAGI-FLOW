@@ -12,8 +12,8 @@ from app.shared.models.base import Base
 class ExecutionStep(Base):
     """Один шаг выполнения: что подали на вход узлу, что получили, сколько заняло.
 
-    warnings отделены от error (DESIGN.md, ПРАВКА 5): error — падение шага,
-    warnings — нефатальные замечания (например, несовпадение типов в If),
+    warnings отделены от error (DESIGN.md, ПРАВКА 5): error - падение шага,
+    warnings - нефатальные замечания (например, несовпадение типов в If),
     которые не влияют на статус.
     """
 

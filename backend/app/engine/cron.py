@@ -5,7 +5,7 @@
 (сдвиг next_run_at после тика). Держим в одном месте, чтобы правила валидации
 и расчёта не разъехались.
 
-croniter не поставляет типы (py.typed отсутствует) — в pyproject.toml для него
+croniter не поставляет типы (py.typed отсутствует) - в pyproject.toml для него
 включён per-module override `ignore_missing_imports`, поэтому импорт ниже
 проходит mypy strict без `type: ignore`.
 """
@@ -17,20 +17,20 @@ from dateutil import tz
 
 
 def is_valid_cron(expr: str) -> bool:
-    """Проверяет cron-выражение. CroniterError → False (не бросаем наружу)."""
+    """Проверяет cron-выражение. CroniterError -> False (не бросаем наружу)."""
     if not expr or not expr.strip():
         return False
     return bool(Croniter.is_valid(expr))
 
 
 def get_timezone(key: str) -> tz.tzfile | tz.tzwin | tz.tzutc | None:
-    """IANA-имя → tzinfo, либо None если зона неизвестна.
+    """IANA-имя -> tzinfo, либо None если зона неизвестна.
 
     dateutil.tz вместо zoneinfo: zoneinfo требует пакет tzdata, которого нет в
     локальном venv на Windows (падает даже ZoneInfo('UTC')), а dateutil несёт
     собственную базу зон и работает одинаково локально и в контейнере.
     Пустая строка и None отвергаются явно: gettz вернул бы на них tzlocal(),
-    то есть «локальную зону машины», что для расписания неявно и неверно.
+    то есть "локальную зону машины", что для расписания неявно и неверно.
     """
     if not key or not key.strip():
         return None
@@ -44,8 +44,8 @@ def is_valid_timezone(key: str) -> bool:
 def next_run_at(spec: str, timezone: str, after: datetime) -> datetime:
     """Следующий момент запуска после `after`, в UTC.
 
-    Cron считается в локальной зоне расписания (иначе «9:00» означало бы 9:00
-    UTC независимо от timezone), а хранится результат всегда в UTC — так
+    Cron считается в локальной зоне расписания (иначе "9:00" означало бы 9:00
+    UTC независимо от timezone), а хранится результат всегда в UTC - так
     сравнение с now() в планировщике не зависит от зоны.
     """
     zone = get_timezone(timezone)

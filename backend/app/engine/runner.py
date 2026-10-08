@@ -2,7 +2,7 @@
 
 Запуск идёт строго против пиннутой версии графа. Узлы выполняются в
 топологическом порядке (Kahn); невыбранные ветки If помечаются skipped
-вместе со всеми потомками — merge в MVP отсутствует (DESIGN.md §4).
+вместе со всеми потомками - merge в MVP отсутствует (DESIGN.md §4).
 """
 
 import asyncio
@@ -40,7 +40,7 @@ class StepCounter:
     Вариант (b) из 5.B-fix: номер шага считаем в памяти, а не
     `SELECT MAX(sequence)+1` на каждый шаг. Сид задаётся один раз в начале
     run_execution (см. `_seed_counter`): при повторном запуске после reclaim
-    он продолжает нумерацию, а не начинает с 1 — иначе sequence продублировался бы.
+    он продолжает нумерацию, а не начинает с 1 - иначе sequence продублировался бы.
     """
 
     def __init__(self, start: int = 1) -> None:
@@ -55,7 +55,7 @@ class StepCounter:
 async def _seed_counter(session: AsyncSession, execution_id: uuid.UUID) -> StepCounter:
     """Счётчик, продолжающий нумерацию уже записанных шагов запуска.
 
-    При первичном запуске шагов нет → MAX = NULL → старт с 1.
+    При первичном запуске шагов нет -> MAX = NULL -> старт с 1.
     """
     last: int | None = await session.scalar(
         select(func.max(ExecutionStep.sequence)).where(
@@ -66,7 +66,7 @@ async def _seed_counter(session: AsyncSession, execution_id: uuid.UUID) -> StepC
 
 
 class NodeExecutionError(Exception):
-    """Узел вернул ошибку или упал — запуск останавливается."""
+    """Узел вернул ошибку или упал - запуск останавливается."""
 
 
 class ExecutionCancelled(Exception):
@@ -77,7 +77,7 @@ def _backoff_delay(config: RetryConfig, attempt: int) -> float:
     """Задержка перед повтором после попытки номер `attempt` (1-based), в секундах.
 
     fixed: всегда base_s. exponential: base_s * 2**(attempt-1), то есть
-    attempt=1 → base_s, attempt=2 → 2*base_s, attempt=3 → 4*base_s.
+    attempt=1 -> base_s, attempt=2 -> 2*base_s, attempt=3 -> 4*base_s.
     """
     if config.backoff == "fixed":
         return config.base_s
@@ -112,7 +112,7 @@ def topological_order(graph: Graph) -> list[Node]:
 
 
 def _descendants(start: str, graph: Graph) -> set[str]:
-    """Все узлы, достижимые из start (включая его) — для пометки skipped."""
+    """Все узлы, достижимые из start (включая его) - для пометки skipped."""
     adjacency: dict[str, list[str]] = defaultdict(list)
     for edge in graph.edges:
         adjacency[edge.source].append(edge.target)
@@ -154,7 +154,7 @@ async def _record_step(
 
     Коммит на шаг, а не общий в конце запуска: live-логи показывают шаги по мере
     выполнения, и при падении узла уже выполненные шаги остаются записанными.
-    NOTIFY идёт ДО коммита — Postgres доставляет уведомление только на commit
+    NOTIFY идёт ДО коммита - Postgres доставляет уведомление только на commit
     своей транзакции; notify после commit попал бы в следующую транзакцию и
     уведомления по шагам схлопнулись бы.
     """
@@ -219,7 +219,7 @@ async def _run_node_with_retry(
     """Выполняет узел, повторяя при ошибке до retry.max_retries раз.
 
     Каждая попытка пишется в execution_steps со своим номером (attempt=1,2,3...);
-    между попытками — пауза backoff и heartbeat, иначе reclaim сочёл бы живого
+    между попытками - пауза backoff и heartbeat, иначе reclaim сочёл бы живого
     воркера зависшим и запустил бы узел параллельно.
     duration_ms последней записи покрывает ВСЕ попытки: это время, которое узел
     в сумме занимал в запуске.
@@ -234,7 +234,7 @@ async def _run_node_with_retry(
 
         key = _idempotency_key(execution.id, node.id, attempt) if side_effect else None
         # дедупликация сайд-эффекта: тот же узел уже успешно отработал в этом
-        # запуске (reclaim + rerun) — не шлём второй раз, отдаём прежний output
+        # запуске (reclaim + rerun) - не шлём второй раз, отдаём прежний output
         if key is not None:
             previous = await _already_done(session, key)
             if previous is not None:
@@ -308,7 +308,7 @@ async def run_execution(
 ) -> None:
     """Выполняет граф пиннутой версии. Бросает NodeExecutionError при падении узла.
 
-    Каждый шаг коммитится отдельно (внутри _record_step) — live-логи видят шаги
+    Каждый шаг коммитится отдельно (внутри _record_step) - live-логи видят шаги
     по мере выполнения, а при падении узла выполненные шаги уже зафиксированы.
     Вызывающий (воркер) после успеха/падения коммитит только финальный статус
     execution.
@@ -318,7 +318,7 @@ async def run_execution(
     # счётчик продолжает нумерацию: при rerun после reclaim старые шаги уже в БД
     counter = await _seed_counter(session, execution.id)
 
-    # workspace запуска — нужен узлам с credentials (action_telegram):
+    # workspace запуска - нужен узлам с credentials (action_telegram):
     # credential ищется в пределах воркспейса workflow.
     workspace_id = await session.scalar(
         select(Workflow.workspace_id).where(Workflow.id == execution.workflow_id)
@@ -335,7 +335,7 @@ async def run_execution(
     }
 
     skipped: set[str] = set()
-    if_branch: dict[str, str] = {}  # node_id If → выбранная ветка
+    if_branch: dict[str, str] = {}  # node_id If -> выбранная ветка
 
     for node in order:
         # heartbeat перед каждым узлом: долгий граф не должен считаться зависшим.
@@ -344,7 +344,7 @@ async def run_execution(
         await heartbeat(session, execution.id, worker_id)
         await session.commit()
 
-        # отмена — best effort: флаг читаем из БД перед каждым узлом. Отдельный
+        # отмена - best effort: флаг читаем из БД перед каждым узлом. Отдельный
         # scalar-select (не session.get) идёт в БД и видит чужой commit, минуя
         # identity map сессии
         current_status = await session.scalar(
@@ -359,7 +359,7 @@ async def run_execution(
             )
             continue
 
-        # узел, достижимый только через невыбранную ветку If, — пропускаем
+        # узел, достижимый только через невыбранную ветку If, - пропускаем
         handle_taken = _reaching_handle(node.id, graph)
         if handle_taken is not None:
             parent = next(
@@ -393,7 +393,7 @@ async def run_execution(
 
         resolved = expressions.resolve_params(params, context)
 
-        # retry валидирован схемой узла; отсутствие retry → без повторов
+        # retry валидирован схемой узла; отсутствие retry -> без повторов
         retry = RetryConfig.model_validate(params.get("retry") or {})
         result = await _run_node_with_retry(
             session, execution, node, worker_id, resolved, context, retry, counter
@@ -404,7 +404,7 @@ async def run_execution(
         if node.type == IF_NODE_TYPE:
             branch = str(result.get("branch", "false"))
             if_branch[node.id] = branch
-            # все узлы, достижимые только через невыбранный handle, — skipped
+            # все узлы, достижимые только через невыбранный handle, - skipped
             for edge in graph.edges:
                 if edge.source == node.id and edge.sourceHandle != branch:
                     skipped.update(_descendants(edge.target, graph))

@@ -24,7 +24,7 @@ class Schedule(Base):
     workflow_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("workflows.id", ondelete="CASCADE"), nullable=False
     )
-    # 'cron' ('poll' — этап 6)
+    # 'cron' ('poll' - этап 6)
     kind: Mapped[str] = mapped_column(String, nullable=False, default="cron")
     # cron-выражение, например "0 9 * * *"
     spec: Mapped[str] = mapped_column(String, nullable=False)

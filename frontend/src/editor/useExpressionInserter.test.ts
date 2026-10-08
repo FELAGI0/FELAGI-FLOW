@@ -5,8 +5,8 @@ import { act } from "react";
 import { renderHook } from "@/test-utils/renderHook";
 
 /**
- * Логика вставки expression кликом по «доступным данным»: в активное поле или,
- * если фокуса нет, — в clipboard.
+ * Логика вставки expression кликом по "доступным данным": в активное поле или,
+ * если фокуса нет, - в clipboard.
  */
 
 function makeField(): HTMLInputElement {

@@ -8,7 +8,7 @@ import type { Execution, ExecutionStep } from "@/types/execution";
 /**
  * Live-подписка на шаги запуска (5.C.2).
  *
- * Основной канал — WebSocket `/ws/executions/{id}`: snapshot заменяет
+ * Основной канал - WebSocket `/ws/executions/{id}`: snapshot заменяет
  * состояние, `steps` добавляет новые шаги (дедупликация по id), `finished`
  * фиксирует финальный статус.
  *
@@ -17,9 +17,9 @@ import type { Execution, ExecutionStep } from "@/types/execution";
  * что после завершения дочитываем актуальные данные через
  * `GET /api/executions/{id}` и заменяем ими состояние (вариант A, фикс 5.C.3).
  *
- * Если WS не поднимается (исчерпаны попытки переподключения) — переходим в
- * `fallback`: включаем polling через TanStack Query, чтобы UI не «замер».
- * При постоянных ошибках (невалидный токен/нет доступа) — `closed`, без реконнекта.
+ * Если WS не поднимается (исчерпаны попытки переподключения) - переходим в
+ * `fallback`: включаем polling через TanStack Query, чтобы UI не "замер".
+ * При постоянных ошибках (невалидный токен/нет доступа) - `closed`, без реконнекта.
  */
 
 export type ConnectionState =
@@ -65,7 +65,7 @@ export function useExecutionLogs(
         refetchInterval: connectionState === "fallback" ? FALLBACK_POLL_MS : false,
     });
 
-    // пока в fallback — источник истины опрос, а не WS
+    // пока в fallback - источник истины опрос, а не WS
     useEffect(() => {
         if (connectionState === "fallback" && fallbackQuery.data) {
             setExecution(fallbackQuery.data);
@@ -78,7 +78,7 @@ export function useExecutionLogs(
         setConnectionState("connecting");
         setError(null);
         // защита от setState после размонтирования/смены id: in-flight запрос
-        // getExecution из onFinished может завершиться уже «не в том» эффекте
+        // getExecution из onFinished может завершиться уже "не в том" эффекте
         let cancelled = false;
 
         const handle = connectExecutionLogs(
@@ -102,7 +102,7 @@ export function useExecutionLogs(
                     setConnectionState("closed");
                     // WS-снапшот снят на подключении (обычно status=queued), в нём
                     // устаревшие attempts/started_at/finished_at; `finished` их не
-                    // несёт — дочитываем актуальные данные из REST
+                    // несёт - дочитываем актуальные данные из REST
                     void (async () => {
                         try {
                             const fresh = await getExecution(executionId);
@@ -110,21 +110,21 @@ export function useExecutionLogs(
                             setExecution(fresh);
                             setSteps(fresh.steps);
                         } catch {
-                            // REST недоступен — оставляем данные из снапшота
+                            // REST недоступен - оставляем данные из снапшота
                         }
                     })();
                 },
                 onReconnecting: () => setConnectionState("reconnecting"),
                 onExhausted: () => setConnectionState("fallback"),
                 onClose: (code) => {
-                    // 1000 — нормальное завершение; «фатальные» коды — реконнект не поможет
+                    // 1000 - нормальное завершение; "фатальные" коды - реконнект не поможет
                     if (code === 1000 || isFatalCloseCode(code)) {
                         setConnectionState("closed");
                     }
                 },
                 onError: (message) => {
                     setError(message);
-                    // нет токена и т.п.: соединение не открылось — из «connecting» в «closed»
+                    // нет токена и т.п.: соединение не открылось - из "connecting" в "closed"
                     setConnectionState((prev) => (prev === "connecting" ? "closed" : prev));
                 },
             },

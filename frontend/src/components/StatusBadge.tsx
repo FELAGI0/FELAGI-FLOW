@@ -1,6 +1,6 @@
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 
-/** Цвет статуса запуска/шага (5.C.1): queued — серый, running — синий и т.д. */
+/** Цвет статуса запуска/шага (5.C.1): queued - серый, running - синий и т.д. */
 const STATUS_VARIANT: Record<string, NonNullable<BadgeProps["variant"]>> = {
     queued: "gray",
     running: "blue",

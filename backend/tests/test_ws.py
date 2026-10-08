@@ -2,7 +2,7 @@
 
 Синхронные (starlette TestClient): он сам держит portal-loop и поднимает
 lifespan, в котором менеджер открывает LISTEN. Данные готовим отдельными
-`asyncio.run` поверх NullPool-движка — так у каждого вызова свой loop и нет
+`asyncio.run` поверх NullPool-движка - так у каждого вызова свой loop и нет
 пересечения пулов между portal-loop и pytest-asyncio.
 
 Только Postgres: нужны pg_notify/LISTEN и отдельные соединения.
@@ -81,7 +81,7 @@ def ws_client(monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
     """TestClient с get_session, переопределённым на NullPool-фабрику тестовой БД.
 
     settings.database_url тоже указываем на тестовую БД: менеджер LISTEN читает
-    её при старте lifespan (в проде это боевая БД, в тестах — felagi_test).
+    её при старте lifespan (в проде это боевая БД, в тестах - felagi_test).
     """
     url = _async_url()
     monkeypatch.setattr(settings, "database_url", url)
@@ -259,7 +259,7 @@ def test_ws_with_invalid_token_closes_4401(ws_client: TestClient) -> None:
 
 
 def test_ws_with_foreign_token_closes_4404(ws_client: TestClient) -> None:
-    """Токен валиден, но пользователь не member чужого workspace → 4404."""
+    """Токен валиден, но пользователь не member чужого workspace -> 4404."""
     owner = _seed()
     stranger = _seed()
     with pytest.raises(WebSocketDisconnect) as exc, ws_client.websocket_connect(
@@ -334,7 +334,7 @@ def test_ws_ignores_notify_for_other_execution(ws_client: TestClient) -> None:
 
     Прямую маршрутизацию (чужой id НЕ будит соединение) проверяет
     test_listen_manager_routes_only_matching_execution: через WS это ненаблюдаемо,
-    т.к. эндпоинт всегда перечитывает свой execution и дедуплицирует шаги —
+    т.к. эндпоинт всегда перечитывает свой execution и дедуплицирует шаги -
     лишнее пробуждение при отсутствии новых шагов не даёт сообщения.
     """
     data = _seed(status="running", steps=0)
@@ -396,7 +396,7 @@ def test_ws_reconnect_snapshot_has_all_steps(ws_client: TestClient) -> None:
 
 
 def test_ws_connection_limit_per_user(ws_client: TestClient) -> None:
-    """Сверх лимита одновременных соединений → close(4429)."""
+    """Сверх лимита одновременных соединений -> close(4429)."""
     data = _seed(status="running")
     url = f"/ws/executions/{data['execution_id']}?token={data['token']}"
 
@@ -425,7 +425,7 @@ def test_ws_connection_limit_per_user(ws_client: TestClient) -> None:
 def test_listen_manager_routes_only_matching_execution() -> None:
     """Уведомление доходит только до подписчиков того же execution_id.
 
-    Юнит-тест менеджера (без WS): через соединение это ненаблюдаемо — эндпоинт
+    Юнит-тест менеджера (без WS): через соединение это ненаблюдаемо - эндпоинт
     перечитывает свой execution и дедуплицирует шаги, поэтому лишнее пробуждение
     при отсутствии новых шагов не приводит к отправке сообщения.
     """
@@ -447,7 +447,7 @@ def test_listen_manager_routes_only_matching_execution() -> None:
 
 
 def test_listen_manager_fans_out_to_all_subscribers_of_same_execution() -> None:
-    """Два соединения на один запуск — notify получают оба."""
+    """Два соединения на один запуск - notify получают оба."""
     manager = ListenManager()
     execution_id = uuid.uuid4()
     first = manager.subscribe(execution_id)
@@ -472,7 +472,7 @@ def test_per_user_connection_limit_is_counted() -> None:
     assert manager.register_connection(user_id) is True
 
 
-# --- runner → NOTIFY (пункт 1) ------------------------------------------------
+# --- runner -> NOTIFY (пункт 1) ------------------------------------------------
 
 
 async def test_runner_notifies_on_each_step() -> None:
@@ -482,10 +482,10 @@ async def test_runner_notifies_on_each_step() -> None:
     шлёт настоящий run_execution, слушаем отдельным asyncpg-соединением.
 
     ВАЖНО про количество: Postgres схлопывает ОДИНАКОВЫЕ уведомления внутри одной
-    транзакции в одну доставку. Runner пишет все шаги в одной транзакции (коммит —
-    в воркере один раз), payload — только execution_id, поэтому N шагов дают 1
-    доставку. Именно поэтому здесь проверяем «уведомление пришло и совпадает с
-    execution_id», а не «по уведомлению на шаг».
+    транзакции в одну доставку. Runner пишет все шаги в одной транзакции (коммит -
+    в воркере один раз), payload - только execution_id, поэтому N шагов дают 1
+    доставку. Именно поэтому здесь проверяем "уведомление пришло и совпадает с
+    execution_id", а не "по уведомлению на шаг".
     """
     from app.engine.queue import claim_next
     from app.engine.runner import run_execution
@@ -540,7 +540,7 @@ async def test_runner_notifies_on_each_step() -> None:
             execution_id = str(execution.id)
 
             await run_execution(session, execution, version, "w1")
-            # NOTIFY доставляется по COMMIT — без него уведомлений не будет
+            # NOTIFY доставляется по COMMIT - без него уведомлений не будет
             await session.commit()
 
         # доставка асинхронна: даём серверу отправить уведомления

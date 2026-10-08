@@ -151,7 +151,7 @@ describe("toBackendGraph", () => {
             params: { prompt: "hi" },
             position: { x: 3, y: 4 },
         });
-        // ключа data быть не должно — бэкенд-схема его не знает
+        // ключа data быть не должно - бэкенд-схема его не знает
         expect(Object.keys(node ?? {})).not.toContain("data");
     });
 
